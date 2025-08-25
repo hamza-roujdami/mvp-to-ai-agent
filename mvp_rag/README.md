@@ -48,10 +48,10 @@ Open http://localhost:7860
 ```mermaid
 flowchart TD
     U[User Question] --> UI[Gradio UI]
-    UI --> EMB[Ollama Embeddings\n(nomic-embed-text)]
-    EMB -->|vector| VS[(Qdrant\nhealthcare_docs)]
-    VS -->|top_k=3, score>=0.38| CTX[Retrieved Context]
-    CTX --> LLM[Ollama LLM\n(qwen3:4b-instruct)]
+    UI --> EMB[Ollama Embeddings<br/>nomic-embed-text]
+    EMB -->|vector| VS[(Qdrant<br/>healthcare_docs)]
+    VS -->|top_k=3, thr=0.38| CTX[Retrieved Context]
+    CTX --> LLM[Ollama LLM<br/>qwen3:4b-instruct]
     UI -->|controls| LLM
     LLM --> RESP[Streaming Response]
     CTX --> CITES[Citations]
