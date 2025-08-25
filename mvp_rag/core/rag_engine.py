@@ -27,10 +27,10 @@ class RAGEngine:
     """Main RAG orchestration engine."""
     
     def __init__(self,
-                 llm_model: str = "phi4-mini",
-                 embedding_model: str = "bge-m3",
-                 top_k: int = 5,
-                 score_threshold: float = 0.3):
+                 llm_model: str = "qwen3:4b-instruct",
+                 embedding_model: str = "nomic-embed-text",
+                 top_k: int = 3,
+                 score_threshold: float = 0.38):
         """
         Initialize the RAG engine.
         
@@ -60,7 +60,9 @@ class RAGEngine:
         - Be informative but not diagnostic
         - Include relevant medical disclaimers
         - Encourage professional consultation when appropriate
-        - Be clear about limitations of AI health advice"""
+        - Be clear about limitations of AI health advice
+        - Keep answers concise (about 3–5 sentences) focused on the question
+        - When helpful, include one practical, low-risk actionable step users can take now"""
     
     def query(self, user_question: str) -> Dict[str, Any]:
         """
@@ -163,8 +165,8 @@ Please provide a helpful, accurate response based on the context above. Include 
             model=self.llm_model,
             prompt=prompt,
             system=self.system_prompt,
-            temperature=0.7,
-            max_tokens=1000
+            temperature=0.4,
+            max_tokens=400
         )
     
     def _calculate_avg_score(self, search_results: List[Dict[str, Any]]) -> float:

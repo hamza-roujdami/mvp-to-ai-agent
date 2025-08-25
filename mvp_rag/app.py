@@ -30,8 +30,19 @@ class GradioRAGInterface:
     def setup_rag_engine(self):
         """Setup the RAG engine."""
         try:
-            self.rag_engine = RAGEngine()
+            self.rag_engine = RAGEngine(llm_model="qwen3:4b-instruct", embedding_model="nomic-embed-text")
             self.logger.info("RAG Engine initialized successfully")
+            # Pre-warm LLM to reduce first-response latency
+            try:
+                _ = self.rag_engine.llm_client.generate(
+                    model=self.rag_engine.llm_model,
+                    prompt="OK",
+                    system="You are a helpful assistant.",
+                    temperature=0.1,
+                    max_tokens=5
+                )
+            except Exception as _warm_err:
+                self.logger.info(f"Warm-up skipped: {_warm_err}")
         except Exception as e:
             self.logger.error(f"Failed to initialize RAG Engine: {e}")
             self.rag_engine = None
@@ -71,7 +82,14 @@ class GradioRAGInterface:
                     
                     context_parts.append(f"**Document {i}** (Score: {score:.3f}, Source: {source})\n{content}\n")
                 
-                context = "\n".join(context_parts)
+                # Citations (top sources)
+                cites = []
+                for doc in result['context']['retrieved_documents'][:3]:
+                    title = doc.get('title') or (doc.get('source') or 'Source')
+                    source = doc.get('source', '')
+                    cites.append(f"- {title} {f'({source})' if source else ''}")
+                citations_md = "\n**Citations:**\n" + ("\n".join(cites) if cites else "- (none)")
+                context = "\n".join(context_parts) + citations_md
             else:
                 context = result['context']['context_summary']
             
@@ -182,7 +200,7 @@ class GradioRAGInterface:
                     
                 with gr.Column(scale=1):
                     # System info
-                    gr.Markdown("### 📊 System Status")
+                    gr.Markdown("### 📊 System Status (click ‘System Health’)")
                     system_status = gr.Markdown("Click 'System Health' to check status")
             
             # Response area
@@ -215,7 +233,8 @@ class GradioRAGInterface:
             submit_btn.click(
                 fn=self.query_rag,
                 inputs=[question_input, show_context],
-                outputs=[response_output, context_output, metrics_output]
+                outputs=[response_output, context_output, metrics_output],
+                queue=True
             )
             
             health_btn.click(

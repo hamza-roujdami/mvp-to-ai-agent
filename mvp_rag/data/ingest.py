@@ -108,7 +108,7 @@ def main():
     # Generate embeddings
     print("\n🧠 Generating embeddings...")
     embeddings = []
-    embedding_model = "bge-m3"
+    embedding_model = "nomic-embed-text"
     
     for i, doc in enumerate(documents):
         print(f"   Embedding document {i+1}/{len(documents)}: {doc['title']}")

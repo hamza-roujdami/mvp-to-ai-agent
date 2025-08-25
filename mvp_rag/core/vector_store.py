@@ -44,30 +44,35 @@ class QdrantVectorStore:
         self.collection_name = collection_name
         self.logger = logger
         
-        # Initialize collection if it doesn't exist
-        self._init_collection()
-    
-    def _init_collection(self, vector_size: int = 1024):
-        """Initialize the collection with proper configuration."""
+        # Collection will be ensured on first upsert with the correct vector size
+        
+    def _ensure_collection(self, vector_size: int) -> None:
+        """Ensure collection exists with the correct vector size; recreate if mismatched."""
         try:
-            # Check if collection exists
             collections = self.client.get_collections()
-            collection_names = [c.name for c in collections.collections]
-            
-            if self.collection_name not in collection_names:
+            names = [c.name for c in collections.collections]
+            if self.collection_name not in names:
                 self.client.create_collection(
                     collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=vector_size,
-                        distance=Distance.COSINE
-                    )
+                    vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE)
                 )
-                self.logger.info(f"Created collection: {self.collection_name}")
-            else:
-                self.logger.info(f"Using existing collection: {self.collection_name}")
-                
+                self.logger.info(f"Created collection: {self.collection_name} (size={vector_size})")
+                return
+            # Exists: verify size
+            info = self.client.get_collection(self.collection_name)
+            current_size = info.config.params.vectors.size
+            if current_size != vector_size:
+                self.logger.info(
+                    f"Recreating collection {self.collection_name} due to vector size mismatch "
+                    f"(current={current_size}, required={vector_size})"
+                )
+                self.client.delete_collection(self.collection_name)
+                self.client.create_collection(
+                    collection_name=self.collection_name,
+                    vectors_config=VectorParams(size=vector_size, distance=Distance.COSINE)
+                )
         except Exception as e:
-            self.logger.error(f"Error initializing collection: {e}")
+            self.logger.error(f"Error ensuring collection: {e}")
             raise
     
     def add_documents(self, 
@@ -85,6 +90,11 @@ class QdrantVectorStore:
         """
         if len(documents) != len(embeddings):
             raise ValueError("Documents and embeddings must have the same length")
+        
+        # Ensure collection exists with correct vector size based on embeddings
+        if not embeddings or not embeddings[0]:
+            raise ValueError("Embeddings are empty; cannot determine vector size")
+        self._ensure_collection(len(embeddings[0]))
         
         points = []
         doc_ids = []
