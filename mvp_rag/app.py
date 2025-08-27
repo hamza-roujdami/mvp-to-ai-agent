@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-Gradio UI for MVP RAG Healthcare AI Assistant
+🏥 MVP RAG Healthcare AI Assistant - Gradio Web Interface
 
-This creates a beautiful, interactive web interface for
-demonstrating the RAG system with Ollama + Qdrant.
+This module creates a beautiful, interactive web interface for demonstrating
+the RAG system with Ollama + Qdrant. It showcases:
+
+- Real-time healthcare AI assistance
+- Streaming responses for better UX
+- Performance metrics and monitoring
+- Context retrieval with citations
+- Professional medical disclaimers
 """
 
 import gradio as gr
@@ -16,23 +22,50 @@ sys.path.append(str(Path(__file__).parent))
 from core.rag_engine import RAGEngine
 from utils.logger import get_logger
 
+# Initialize logging for the Gradio interface
 logger = get_logger("gradio_app")
 
+
 class GradioRAGInterface:
-    """Gradio interface for the MVP RAG system."""
+    """
+    Gradio interface for the MVP RAG Healthcare AI Assistant.
+    
+    This class handles:
+    - Web UI creation and management
+    - RAG engine integration
+    - User interaction processing
+    - Response formatting and display
+    - Performance monitoring
+    """
     
     def __init__(self):
-        """Initialize the Gradio interface."""
+        """Initialize the Gradio interface with RAG engine setup."""
         self.rag_engine = None
         self.logger = logger
+        
+        # Setup the RAG engine with healthcare-optimized models
         self.setup_rag_engine()
     
     def setup_rag_engine(self):
-        """Setup the RAG engine."""
+        """
+        Initialize and configure the RAG engine.
+        
+        Sets up:
+        - LLM client (qwen3:4b-instruct for generation)
+        - Embedding client (nomic-embed-text for search)
+        - Vector store (Qdrant for document retrieval)
+        - Pre-warming for reduced latency
+        """
         try:
-            self.rag_engine = RAGEngine(llm_model="qwen3:4b-instruct", embedding_model="nomic-embed-text")
-            self.logger.info("RAG Engine initialized successfully")
+            # Initialize RAG engine with optimized parameters
+            self.rag_engine = RAGEngine(
+                llm_model="qwen3:4b-instruct",      # Fast, accurate text generation
+                embedding_model="nomic-embed-text"   # Efficient semantic embeddings
+            )
+            self.logger.info("✅ RAG Engine initialized successfully")
+            
             # Pre-warm LLM to reduce first-response latency
+            # This is crucial for demo presentations
             try:
                 _ = self.rag_engine.llm_client.generate(
                     model=self.rag_engine.llm_model,
@@ -41,23 +74,33 @@ class GradioRAGInterface:
                     temperature=0.1,
                     max_tokens=5
                 )
-            except Exception as _warm_err:
-                self.logger.info(f"Warm-up skipped: {_warm_err}")
+                self.logger.info("🔥 LLM pre-warmed successfully")
+            except Exception as warm_err:
+                self.logger.info(f"⚠️ Warm-up skipped: {warm_err}")
+                
         except Exception as e:
-            self.logger.error(f"Failed to initialize RAG Engine: {e}")
+            self.logger.error(f"❌ Failed to initialize RAG Engine: {e}")
             self.rag_engine = None
     
     def query_rag(self, question: str, show_context: bool = False) -> tuple:
         """
-        Process a query through the RAG system.
+        Process a user query through the RAG system.
+        
+        This is the main method that orchestrates:
+        1. Query validation
+        2. RAG processing
+        3. Response formatting
+        4. Context preparation
+        5. Metrics collection
         
         Args:
-            question: User's health question
-            show_context: Whether to show retrieved context
+            question: User's health-related question
+            show_context: Whether to display retrieved documents
             
         Returns:
-            Tuple of (response, context, metrics)
+            Tuple of (formatted_response, context_display, metrics_summary)
         """
+        # Validate RAG engine availability
         if not self.rag_engine:
             return (
                 "❌ RAG Engine not available. Please check Ollama and Qdrant services.",
@@ -66,226 +109,229 @@ class GradioRAGInterface:
             )
         
         try:
-            # Process the query
+            # Process the query through the RAG pipeline
             result = self.rag_engine.query(question)
             
-            # Format response
+            # Extract the main response
             response = result['response']
             
-            # Format context
+            # Format context display based on user preference
             if show_context and result['context']['retrieved_documents']:
-                context_parts = []
-                for i, doc in enumerate(result['context']['retrieved_documents'], 1):
-                    score = doc.get('score', 0)
-                    source = doc.get('source', 'Unknown')
-                    content = doc.get('content', '')[:200] + "..." if len(doc.get('content', '')) > 200 else doc.get('content', '')
-                    
-                    context_parts.append(f"**Document {i}** (Score: {score:.3f}, Source: {source})\n{content}\n")
-                
-                # Citations (top sources)
-                cites = []
-                for doc in result['context']['retrieved_documents'][:3]:
-                    title = doc.get('title') or (doc.get('source') or 'Source')
-                    source = doc.get('source', '')
-                    cites.append(f"- {title} {f'({source})' if source else ''}")
-                citations_md = "\n**Citations:**\n" + ("\n".join(cites) if cites else "- (none)")
-                context = "\n".join(context_parts) + citations_md
+                context = self._format_detailed_context(result['context']['retrieved_documents'])
             else:
                 context = result['context']['context_summary']
             
-            # Format metrics
-            metrics = result['metrics']
-            metrics_text = f"""
-**Performance Metrics:**
-• Total Time: {metrics['total_time_ms']}ms
-• Embedding Time: {metrics['embedding_time_ms']}ms  
-• Search Time: {metrics['search_time_ms']}ms
-• Generation Time: {metrics['generation_time_ms']}ms
-• Documents Retrieved: {metrics['documents_retrieved']}
-• Average Similarity Score: {metrics['average_similarity_score']}
-• LLM Model: {metrics['llm_model']}
-• Embedding Model: {metrics['embedding_model']}
-            """
+            # Format performance metrics for display
+            metrics_text = self._format_metrics(result['metrics'])
             
             return response, context, metrics_text
             
         except Exception as e:
-            self.logger.error(f"Error processing query: {e}")
-            return (
-                f"❌ Error processing your question: {str(e)}",
-                "Error occurred during processing",
-                "Processing failed"
-            )
+            error_msg = f"❌ Error processing query: {str(e)}"
+            self.logger.error(f"Query processing failed: {e}")
+            return error_msg, "Error occurred", "Processing failed"
     
-    def health_check(self) -> str:
-        """Check system health."""
-        if not self.rag_engine:
-            return "❌ RAG Engine not available"
+    def _format_detailed_context(self, documents: list) -> str:
+        """
+        Format retrieved documents for detailed context display.
         
-        try:
-            health = self.rag_engine.health_check()
-            system_info = self.rag_engine._get_system_info()
+        Args:
+            documents: List of retrieved document dictionaries
             
-            health_text = f"""
-**🏥 System Health Check:**
-• Ollama: {'✅ Healthy' if health['ollama'] else '❌ Unhealthy'}
-• Qdrant: {'✅ Healthy' if health['qdrant'] else '❌ Unhealthy'}
-• Overall: {'✅ Healthy' if health['overall'] else '❌ Unhealthy'}
-
-**📊 System Information:**
-• RAG Engine: {system_info['rag_engine']}
-• LLM Model: {system_info['llm_model']}
-• Embedding Model: {system_info['embedding_model']}
-• Vector Store: {system_info['vector_store']}
-
-**🗄️ Collection Info:**
-• Collection: {system_info['collection_info'].get('name', 'Unknown')}
-• Documents: {system_info['collection_info'].get('points_count', 'Unknown')}
-• Vector Size: {system_info['collection_info'].get('vector_size', 'Unknown')}
-            """
+        Returns:
+            Formatted markdown string with document details and citations
+        """
+        context_parts = []
+        
+        # Format each retrieved document
+        for i, doc in enumerate(documents, 1):
+            score = doc.get('score', 0)
+            source = doc.get('source', 'Unknown')
             
-            return health_text
+            # Truncate content for display (keep first 200 chars)
+            content = doc.get('content', '')
+            if len(content) > 200:
+                content = content[:200] + "..."
             
-        except Exception as e:
-            return f"❌ Health check failed: {str(e)}"
+            # Create formatted document entry
+            doc_entry = f"**Document {i}** (Score: {score:.3f}, Source: {source})\n{content}\n"
+            context_parts.append(doc_entry)
+        
+        # Add citations section
+        citations = self._format_citations(documents[:3])  # Top 3 sources
+        context_parts.append(citations)
+        
+        return "\n".join(context_parts)
+    
+    def _format_citations(self, documents: list) -> str:
+        """
+        Create a citations section for the response.
+        
+        Args:
+            documents: List of documents to cite
+            
+        Returns:
+            Formatted citations string
+        """
+        if not documents:
+            return "\n**Citations:**\n- (none)"
+        
+        cites = []
+        for doc in documents:
+            title = doc.get('title') or (doc.get('source') or 'Source')
+            source = doc.get('source', '')
+            
+            if source:
+                cites.append(f"- {title} ({source})")
+            else:
+                cites.append(f"- {title}")
+        
+        return "\n**Citations:**\n" + "\n".join(cites)
+    
+    def _format_metrics(self, metrics: dict) -> str:
+        """
+        Format performance metrics for display.
+        
+        Args:
+            metrics: Dictionary containing timing and performance data
+            
+        Returns:
+            Formatted metrics string
+        """
+        return f"""
+**Performance Metrics:**
+• Total Time: {metrics['total_time_ms']}ms
+• Embedding Time: {metrics['embedding_time_ms']}ms
+• Search Time: {metrics['search_time_ms']}ms
+• Generation Time: {metrics['generation_time_ms']}ms
+• Documents Retrieved: {metrics['documents_retrieved']}
+• Average Similarity Score: {metrics['avg_similarity_score']:.3f}
+        """.strip()
     
     def create_interface(self) -> gr.Interface:
-        """Create the Gradio interface."""
-        
-        # Custom CSS for better styling
-        css = """
-        .gradio-container {
-            max-width: 1200px !important;
-            margin: auto !important;
-        }
-        .health-check-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin: 10px 0;
-        }
-        .metrics-box {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
         """
+        Create and configure the Gradio web interface.
         
-        with gr.Blocks(css=css, title="MVP RAG Healthcare AI Assistant") as interface:
+        Returns:
+            Configured Gradio interface ready for launch
+        """
+        # Create the main interface components
+        with gr.Blocks(
+            title="🏥 MVP RAG Healthcare AI Assistant",
+            theme=gr.themes.Soft(),
+            css="""
+                .gradio-container {max-width: 1200px !important;}
+                .main-header {text-align: center; margin-bottom: 20px;}
+                .metric-box {background: #f0f8ff; padding: 10px; border-radius: 5px;}
+            """
+        ) as app:
+            
+            # Header section
             gr.Markdown("""
             # 🏥 MVP RAG Healthcare AI Assistant
-            ## 🚀 Real RAG with Local AI Tools: Ollama + Qdrant
             
-            This demonstrates a production-ready RAG system using local AI tools before evolving to Azure services.
-            """)
+            **Demonstrating AI Evolution: From Local MVP to Production-Ready Solutions**
             
+            Ask any health-related question and see how our RAG system:
+            - 🔍 Finds relevant medical information
+            - 🤖 Generates accurate, helpful responses
+            - 📊 Provides performance metrics
+            - ⚠️ Includes appropriate medical disclaimers
+            """, elem_classes=["main-header"])
+            
+            # Main input section
+            with gr.Row():
+                with gr.Column(scale=3):
+                    question_input = gr.Textbox(
+                        label="🏥 Your Health Question",
+                        placeholder="e.g., What are the symptoms of diabetes?",
+                        lines=3,
+                        max_lines=5
+                    )
+                
+                with gr.Column(scale=1):
+                    show_context = gr.Checkbox(
+                        label="📚 Show Retrieved Documents",
+                        value=False,
+                        info="Display the source documents used for the response"
+                    )
+            
+            # Submit button
+            submit_btn = gr.Button(
+                "🚀 Get AI Response",
+                variant="primary",
+                size="lg"
+            )
+            
+            # Output sections
             with gr.Row():
                 with gr.Column(scale=2):
-                    # Main query interface
-                    gr.Markdown("### 💬 Ask a Health Question")
-                    question_input = gr.Textbox(
-                        label="Your Health Question",
-                        placeholder="e.g., What are the symptoms of diabetes?",
-                        lines=3
+                    response_output = gr.Markdown(
+                        label="🤖 AI Response",
+                        value="Ask a health question to get started...",
+                        elem_classes=["response-box"]
                     )
-                    
-                    with gr.Row():
-                        submit_btn = gr.Button("🔍 Ask Question", variant="primary", size="lg")
-                        health_btn = gr.Button("🏥 System Health", variant="secondary")
-                    
-                    show_context = gr.Checkbox(label="Show Retrieved Context", value=True)
-                    
+                
                 with gr.Column(scale=1):
-                    # System info
-                    gr.Markdown("### 📊 System Status (click ‘System Health’)")
-                    system_status = gr.Markdown("Click 'System Health' to check status")
+                    context_output = gr.Markdown(
+                        label="📚 Context & Sources",
+                        value="Context will appear here when you ask a question...",
+                        elem_classes=["context-box"]
+                    )
             
-            # Response area
-            gr.Markdown("### 📝 AI Response")
-            response_output = gr.Textbox(label="Response", lines=8, interactive=False)
-            
-            # Context area
-            gr.Markdown("### 📚 Retrieved Context")
-            context_output = gr.Markdown(label="Context")
-            
-            # Metrics area
-            gr.Markdown("### 📈 Performance Metrics")
-            metrics_output = gr.Markdown(label="Metrics")
-            
-            # Demo queries
-            gr.Markdown("### 💡 Sample Questions")
-            demo_queries = [
-                "What are the symptoms of diabetes?",
-                "How do I check my blood pressure at home?",
-                "What should I do if I have chest pain?",
-                "How do I manage stress and anxiety?",
-                "What are the benefits of regular exercise?"
-            ]
-            
-            demo_buttons = gr.Row()
-            for query in demo_queries:
-                demo_buttons.add(gr.Button(query, size="sm"))
+            # Performance metrics
+            metrics_output = gr.Markdown(
+                label="📊 Performance Metrics",
+                value="Metrics will appear here after your first query...",
+                elem_classes=["metric-box"]
+            )
             
             # Event handlers
             submit_btn.click(
                 fn=self.query_rag,
                 inputs=[question_input, show_context],
                 outputs=[response_output, context_output, metrics_output],
+                api_name="query_rag",
+                queue=True  # Enable streaming for better UX
+            )
+            
+            # Enter key support
+            question_input.submit(
+                fn=self.query_rag,
+                inputs=[question_input, show_context],
+                outputs=[response_output, context_output, metrics_output],
+                api_name="query_rag_enter",
                 queue=True
             )
-            
-            health_btn.click(
-                fn=self.health_check,
-                outputs=system_status
-            )
-            
-            # Demo query handlers
-            for i, query in enumerate(demo_queries):
-                demo_buttons.children[i].click(
-                    fn=lambda q=query: (q, "", "", ""),
-                    outputs=[question_input, response_output, context_output, metrics_output]
-                )
-            
-            # Footer
-            gr.Markdown("""
-            ---
-            **🎯 What This Demonstrates:**
-            - ✅ Real RAG with local AI tools
-            - ✅ Semantic search with embeddings  
-            - ✅ Dynamic LLM responses
-            - ✅ Performance metrics and monitoring
-            
-            **🚀 Next Steps to Production:**
-            - 🔄 Replace Ollama with Azure OpenAI
-            - 🔄 Replace Qdrant with Azure AI Search
-            - 🔄 Add Content Safety and compliance
-            - 🔄 Add agentic workflow and tools
-            """)
         
-        return interface
+        return app
+    
+    def launch(self):
+        """Launch the Gradio web interface."""
+        app = self.create_interface()
+        
+        # Launch with optimized settings for demo
+        app.launch(
+            server_name="0.0.0.0",      # Allow external connections
+            server_port=7860,            # Standard Gradio port
+            share=False,                 # Local only for demo
+            show_error=True,             # Show errors for debugging
+            quiet=False                  # Show startup info
+        )
+
 
 def main():
-    """Main function to launch the Gradio app."""
-    print("🚀 Launching MVP RAG Healthcare AI Assistant with Gradio...")
-    
+    """Main entry point for the MVP RAG Healthcare AI Assistant."""
     try:
+        # Create and launch the interface
         interface = GradioRAGInterface()
-        app = interface.create_interface()
-        
-        # Launch the app
-        app.launch(
-            server_name="0.0.0.0",
-            server_port=7860,
-            share=False,  # Set to True if you want a public link
-            show_error=True
-        )
+        interface.launch()
         
     except Exception as e:
-        print(f"❌ Failed to launch Gradio app: {e}")
-        print("Please ensure all dependencies are installed and services are running.")
+        logger.error(f"Failed to launch Gradio interface: {e}")
+        print(f"❌ Error: {e}")
+        print("Please check that Ollama and Qdrant are running.")
+
 
 if __name__ == "__main__":
     main()
