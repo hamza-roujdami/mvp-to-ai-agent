@@ -34,31 +34,89 @@ flowchart TD
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- **Docker Desktop** running
-- **Ollama** running with required models:
-  ```bash
-  ollama pull qwen3:4b-instruct    # For text generation
-  ollama pull nomic-embed-text      # For embeddings
-  ```
-
-### Run the Demo
+### Step 1: Clone the Repository
 ```bash
-# 1. Activate virtual environment
-source ./venv/bin/activate
+git clone <your-repo-url>
+cd h100-growthx-fy26
+```
 
-# 2. Start Qdrant vector database
+### Step 2: Install Prerequisites
+```bash
+# Install Docker Desktop (if not already installed)
+# Download from: https://www.docker.com/products/docker-desktop/
+
+# Install Ollama (if not already installed)
+# Download from: https://ollama.ai/
+```
+
+### Step 3: Setup Python Environment
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# On macOS/Linux:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+
+# Install dependencies
+pip install -r mvp_rag/requirements.txt
+```
+
+### Step 4: Download Required AI Models
+```bash
+# Pull required Ollama models
+ollama pull qwen3:4b-instruct    # For text generation
+ollama pull nomic-embed-text      # For embeddings
+```
+
+### Step 5: Start Qdrant Vector Database
+```bash
+# Stop any existing Qdrant container
 docker rm -f qdrant 2>/dev/null || true
+
+# Start Qdrant container
 docker run -d --name qdrant -p 6333:6333 -p 6334:6334 qdrant/qdrant
 
-# 3. Ingest sample healthcare documents
-python data/ingest.py
+# Wait a few seconds for Qdrant to start
+sleep 5
+```
 
-# 4. Launch the beautiful Gradio UI
+### Step 6: Ingest Sample Healthcare Documents
+```bash
+# Navigate to MVP RAG directory
+cd mvp_rag
+
+# Ingest sample healthcare documents into Qdrant
+python data/ingest.py
+```
+
+### Step 7: Launch the Healthcare AI Assistant
+```bash
+# Start the Gradio web interface
 python app.py
 ```
 
+### Step 8: Access the Application
 🌐 **Open your browser**: http://localhost:7860
+
+## 🎯 Demo Features
+
+### Example Queries to Test:
+- **🩺 Diabetes Symptoms**: "What are the common symptoms of diabetes?"
+- **💊 Blood Pressure Meds**: "What are the different types of blood pressure medications?"
+- **🫀 Heart Attack Signs**: "What are the warning signs of a heart attack?"
+- **🦠 COVID-19 Guidelines**: "What are the current COVID-19 vaccination guidelines?"
+- **🧠 Mental Health Support**: "What are signs of depression and when should I seek help?"
+- **👶 Pregnancy Care**: "What are important prenatal care guidelines?"
+
+### What You'll See:
+1. **Beautiful Gradio UI** with healthcare-themed design
+2. **Real-time AI responses** with medical disclaimers
+3. **Retrieved documents** with similarity scores
+4. **Performance metrics** showing processing times
+5. **Proper citations** for all medical information
 
 ## 📁 Project Structure
 
@@ -83,6 +141,7 @@ mvp_rag/
 - **Performance Metrics**: Real-time timing and search analytics
 - **Medical Safety**: Built-in disclaimers and professional consultation guidance
 - **Auto-scaling**: Vector size mismatch detection and collection recreation
+- **Example Queries**: Pre-built test cases for easy demonstration
 
 ## 📊 Performance Optimizations
 
@@ -98,17 +157,38 @@ mvp_rag/
 3. **Vector search** → Qdrant finds similar healthcare documents
 4. **Context preparation** → Top 3 relevant documents selected
 5. **LLM generation** → qwen3:4b-instruct creates response
-6. **Streaming display** → Progressive response with citations
-7. **Performance metrics** → Timing and search analytics shown
+6. **Response display** → Formatted with citations and disclaimers
 
-## 🚀 Evolution Path
+## 🛠️ Troubleshooting
 
-This MVP demonstrates the foundation for:
-- **Enterprise RAG**: Azure AI Search + OpenAI
-- **AI Agents**: Azure Agent Service + tool integration
-- **Production Monitoring**: Azure AI Foundry + observability
-- **Content Safety**: Azure Content Safety + guardrails
+### Common Issues:
+- **Ollama not running**: Start Ollama application
+- **Qdrant connection failed**: Check Docker is running and Qdrant container is up
+- **Models not found**: Run `ollama pull` commands for required models
+- **Port 7860 in use**: Kill existing process or change port in app.py
+
+### Health Checks:
+```bash
+# Check Ollama is running
+curl http://localhost:11434/api/tags
+
+# Check Qdrant is running
+curl http://localhost:6333/health
+
+# Check Python environment
+python -c "import gradio; print('Gradio OK')"
+```
+
+## 🚀 Production Deployment
+
+This MVP demonstrates local development patterns that can be extended to production:
+
+- **Cloud Deployment**: Deploy to Azure, AWS, or GCP
+- **Scalable Vector DB**: Use Pinecone, Weaviate, or managed Qdrant
+- **Production LLMs**: Integrate with Azure OpenAI, Anthropic, or other providers
+- **Monitoring**: Add Application Insights, CloudWatch, or similar
+- **Security**: Implement authentication, rate limiting, and data encryption
 
 ---
 
-*Built with ❤️ for demonstrating AI evolution from MVP to production*
+**Built with ❤️ for Healthcare AI Innovation**

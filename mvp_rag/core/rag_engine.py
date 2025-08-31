@@ -265,7 +265,7 @@ Note: I don't have specific context for this question, so I'll provide general i
                 max_tokens=400        # Concise, focused responses
             )
             
-            return result.get('response', 'No response generated')
+            return result.get('text', 'No response generated')
             
         except Exception as e:
             self.logger.error(f"❌ Error generating LLM response: {e}")

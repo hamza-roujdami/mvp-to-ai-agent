@@ -115,6 +115,16 @@ class GradioRAGInterface:
             # Extract the main response
             response = result['response']
             
+            # Debug logging to see what's happening
+            self.logger.info(f"🔍 RAG Result: {result}")
+            self.logger.info(f"🔍 Response: {response}")
+            self.logger.info(f"🔍 Response type: {type(response)}")
+            self.logger.info(f"🔍 Response length: {len(str(response)) if response else 0}")
+            
+            # Ensure response is not empty or None
+            if not response or response.strip() == "":
+                response = "❌ No response was generated. Please try again."
+            
             # Format context display based on user preference
             if show_context and result['context']['retrieved_documents']:
                 context = self._format_detailed_context(result['context']['retrieved_documents'])
@@ -263,6 +273,46 @@ class GradioRAGInterface:
                 size="lg"
             )
             
+            # Example prompts section
+            gr.Markdown("### 💡 **Try These Example Queries:**")
+            
+            with gr.Row():
+                with gr.Column(scale=1):
+                    example_btn_1 = gr.Button(
+                        "🩺 Diabetes Symptoms",
+                        size="sm",
+                        variant="secondary"
+                    )
+                    example_btn_2 = gr.Button(
+                        "💊 Blood Pressure Meds",
+                        size="sm",
+                        variant="secondary"
+                    )
+                
+                with gr.Column(scale=1):
+                    example_btn_3 = gr.Button(
+                        "🫀 Heart Attack Signs",
+                        size="sm",
+                        variant="secondary"
+                    )
+                    example_btn_4 = gr.Button(
+                        "🦠 COVID-19 Guidelines",
+                        size="sm",
+                        variant="secondary"
+                    )
+                
+                with gr.Column(scale=1):
+                    example_btn_5 = gr.Button(
+                        "🧠 Mental Health Support",
+                        size="sm",
+                        variant="secondary"
+                    )
+                    example_btn_6 = gr.Button(
+                        "👶 Pregnancy Care",
+                        size="sm",
+                        variant="secondary"
+                    )
+            
             # Output sections
             with gr.Row():
                 with gr.Column(scale=2):
@@ -302,6 +352,37 @@ class GradioRAGInterface:
                 outputs=[response_output, context_output, metrics_output],
                 api_name="query_rag_enter",
                 queue=True
+            )
+            
+            # Example button handlers
+            example_btn_1.click(
+                fn=lambda: "What are the common symptoms of diabetes and how can I recognize them?",
+                outputs=[question_input]
+            )
+            
+            example_btn_2.click(
+                fn=lambda: "What are the different types of blood pressure medications and their side effects?",
+                outputs=[question_input]
+            )
+            
+            example_btn_3.click(
+                fn=lambda: "What are the warning signs and symptoms of a heart attack?",
+                outputs=[question_input]
+            )
+            
+            example_btn_4.click(
+                fn=lambda: "What are the current COVID-19 vaccination guidelines for adults?",
+                outputs=[question_input]
+            )
+            
+            example_btn_5.click(
+                fn=lambda: "What are some signs of depression and anxiety, and when should I seek help?",
+                outputs=[question_input]
+            )
+            
+            example_btn_6.click(
+                fn=lambda: "What are the important prenatal care guidelines for pregnant women?",
+                outputs=[question_input]
             )
         
         return app
