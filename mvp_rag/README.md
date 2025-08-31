@@ -19,17 +19,17 @@ flowchart TD
     D --> E[Semantic Search<br/>top_k=3, threshold=0.38]
     E --> F[Context Retrieval]
     F --> G[LLM Generation<br/>qwen3:4b-instruct]
-    G --> H[Streaming Response + Citations]
+    G --> H[Response + Citations]
     H --> B
     
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#ccf,stroke:#333,stroke-width:2px
-    style D fill:#cfc,stroke:#333,stroke-width:2px
-    style E fill:#ffc,stroke:#333,stroke-width:2px
-    style F fill:#fcf,stroke:#333,stroke-width:2px
-    style G fill:#ccf,stroke:#333,stroke-width:2px
-    style H fill:#bbf,stroke:#333,stroke-width:2px
+    style A fill:#ff6b6b,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
+    style D fill:#96ceb4,stroke:#333,stroke-width:2px,color:#fff
+    style E fill:#ffeaa7,stroke:#333,stroke-width:2px,color:#333
+    style F fill:#dda0dd,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#ff7675,stroke:#333,stroke-width:2px,color:#fff
+    style H fill:#74b9ff,stroke:#333,stroke-width:2px,color:#fff
 ```
 
 ## 🚀 Quick Start
