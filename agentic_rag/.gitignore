@@ -1,0 +1,106 @@
+# Environment variables and credentials
+.env
+.env.local
+.env.*.local
+config.env
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Azure credentials and configuration
+azure_credentials.json
+azure_config.json
+*.connection
+*.connection_id
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Azure specific
+.azure/
+azure-deployment-*.json
+azure-*.yml
+azure-*.yaml
+
+# Local development
+local/
+dev/
+test_output/
+output/
+results/
+
+# API keys and secrets
+secrets/
+secrets.json
+api_keys.txt
+credentials.txt
