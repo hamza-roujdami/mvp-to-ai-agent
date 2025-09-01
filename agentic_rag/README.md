@@ -1,114 +1,152 @@
 # 🏥 Healthcare Agentic RAG System
 
-A production-ready multi-agent RAG system built with Azure AI Foundry, featuring intelligent healthcare document retrieval, analysis, and patient-friendly response generation.
+A production-ready multi-agent healthcare AI system built with Azure AI Foundry, featuring comprehensive monitoring and patient-friendly responses.
 
-## 🎯 **System Overview**
+## 🏗️ Architecture
 
-This Healthcare Agentic RAG System uses a sophisticated multi-agent architecture to provide comprehensive, evidence-based healthcare information:
+### **Multi-Agent Workflow:**
+```
+User Query → Research Agent → Analysis Agent + Synthesis Agent (Parallel) → Comprehensive Response
+```
 
-- **🔍 Research Agent**: Uses Azure AI Search to retrieve relevant healthcare documents
-- **📊 Analysis Agent**: Employs Code Interpreter for data analysis and visualization
-- **📝 Synthesis Agent**: Generates patient-friendly, comprehensive healthcare responses
-- **🎯 Coordinator Agent**: Orchestrates the complete multi-agent workflow
+### **Agents:**
+- **🔍 Research Agent**: Azure AI Search integration for healthcare document retrieval
+- **📊 Analysis Agent**: Code Interpreter for data analysis and insights
+- **📝 Synthesis Agent**: Enhanced with Code Interpreter for visualizations and patient-friendly responses
 
-## 🚀 **Quick Start**
+## 🚀 Features
 
-### **Prerequisites**
-- Python 3.9+
-- Azure AI Foundry account with deployed models
-- Azure AI Search service with healthcare documents
-- Virtual environment (recommended)
+- ✅ **Multi-Agent Architecture**: Coordinated workflow with parallel execution
+- ✅ **Azure AI Foundry Integration**: Native Azure AI services
+- ✅ **Comprehensive Monitoring**: Azure Monitor Application Insights integration
+- ✅ **Enhanced Visualizations**: Code Interpreter for charts and graphs
+- ✅ **Patient-Friendly Responses**: Clear, actionable healthcare information
+- ✅ **Real-Time Progress**: Streaming updates during workflow execution
+- ✅ **Dark Theme UI**: Modern, accessible interface
 
-### **1. Environment Setup**
+## 📁 Project Structure
+
+```
+agentic_rag/
+├── agents/                    # Multi-agent system
+│   ├── coordinator_agent.py   # Workflow orchestration
+│   ├── research_agent.py      # Document retrieval
+│   ├── analysis_agent.py      # Data analysis
+│   └── synthesis_agent.py     # Response generation with visualizations
+├── monitoring/                # Azure Monitor integration
+│   ├── setup_monitoring.py    # Comprehensive monitoring setup
+│   └── __init__.py
+├── utils/                     # Utilities
+│   ├── logging_config.py      # Logging configuration
+│   └── __init__.py
+├── app.py                     # Main Gradio application
+├── config.env.example         # Environment configuration template
+├── requirements.txt           # Python dependencies
+└── README.md                  # This file
+```
+
+## 🔧 Setup
+
+### **1. Environment Configuration**
+Copy `config.env.example` to `.env` and configure:
+
 ```bash
-# Clone and navigate to project
-cd agentic_rag
+# Azure AI Foundry Configuration
+AZURE_AI_FOUNDRY_ENDPOINT=https://your-resource.services.ai.azure.com/api/projects/your-project
+AZURE_AI_FOUNDRY_API_KEY=your-azure-ai-foundry-api-key-here
 
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Azure AI Search Configuration
+AZURE_SEARCH_ENDPOINT=https://your-search-service.search.windows.net
+AZURE_SEARCH_API_KEY=your-azure-search-admin-key-here
+AZURE_SEARCH_INDEX_NAME=your-search-index-name
+AZURE_SEARCH_CONNECTION_ID=/subscriptions/your-subscription-id/resourceGroups/your-resource-group/providers/Microsoft.CognitiveServices/accounts/your-account/projects/your-project/connections/your-connection
 
-# Install dependencies
+# Application Insights Configuration
+APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=your-key;IngestionEndpoint=https://your-region.in.applicationinsights.azure.com/;LiveEndpoint=https://your-region.livediagnostics.monitor.azure.com/;ApplicationId=your-app-id
+
+# Model Deployments
+GPT4O_DEPLOYMENT=gpt-4o
+```
+
+### **2. Install Dependencies**
+```bash
 pip install -r requirements.txt
 ```
 
-### **2. Configuration**
+### **3. Run the Application**
 ```bash
-# Copy and configure environment variables
-cp config.env.example .env
-
-# Edit .env with your Azure credentials:
-# - AZURE_AI_FOUNDRY_ENDPOINT
-# - AZURE_AI_FOUNDRY_API_KEY  
-# - AZURE_SEARCH_CONNECTION_ID
-# - AZURE_SEARCH_INDEX_NAME
+python app.py
 ```
 
-## 🧪 **Testing the System**
+## 📊 Monitoring
 
-### **Option 1: CLI Testing (Recommended for First Run)**
+The system includes comprehensive monitoring with Azure Monitor Application Insights:
 
-#### **Test Individual Agents**
-```bash
-# Test Research Agent (Azure AI Search)
-python3 agents/research_agent.py
+- **Workflow Traces**: Complete multi-agent execution tracking
+- **Agent Performance**: Individual agent metrics and timing
+- **Custom Events**: Workflow completion and status events
+- **Custom Metrics**: Duration, success rates, performance data
+- **Error Tracking**: Exception monitoring and debugging
 
-# Test Analysis Agent (Code Interpreter)
-python3 agents/analysis_agent.py
+### **Viewing Monitoring Data:**
+1. **Azure AI Foundry Portal**: Go to Monitoring → Application analytics
+2. **Azure Monitor**: Application Insights dashboard
+3. **Real-time Metrics**: Live performance monitoring
 
-# Test Synthesis Agent (Response Generation)
-python3 agents/synthesis_agent.py
-```
+## 🎯 Usage
 
-#### **Test Complete Workflow**
-```bash
-# Test the entire multi-agent pipeline
-python3 test_complete_workflow.py
-```
+### **Example Healthcare Queries:**
+- "What are the symptoms of diabetes and how is it treated?"
+- "Explain the difference between Type 1 and Type 2 diabetes"
+- "What are the side effects of metformin?"
+- "How do I manage high blood pressure?"
+- "What are the warning signs of a heart attack?"
 
-### **Option 2: Gradio Web UI**
+### **Response Format:**
+- **🏥 Key Information**: Essential medical facts
+- **⚠️ Warning Signs**: Symptoms to watch for
+- **💊 Treatment Options**: Evidence-based treatments
+- **📊 Understanding Your Condition**: Visual charts and graphs
+- **💡 What You Can Do**: Actionable steps
+- **🚨 When to Seek Help**: Clear guidance
+- **📚 Additional Resources**: Helpful links and information
 
-#### **Start the Web Interface**
-```bash
-# Start Gradio UI (runs on http://localhost:7860)
-python3 app.py
-```
+## 🔍 Technical Details
 
-#### **Using the Web Interface**
-1. **Open your browser** to `http://localhost:7860`
-2. **Enter a healthcare query** (e.g., "What are diabetes symptoms?")
-3. **Watch the multi-agent workflow** execute in real-time:
-   - 🔍 Research Agent searches documents
-   - 📊 Analysis Agent processes data
-   - 📝 Synthesis Agent generates response
-4. **View the final comprehensive answer** with all insights combined
+### **Performance:**
+- **Typical Execution Time**: 30-40 seconds for comprehensive responses
+- **Parallel Execution**: Analysis and Synthesis agents run simultaneously
+- **Enhanced Capabilities**: Code Interpreter adds visualization overhead but provides better patient understanding
 
-## 🏗️ **System Architecture**
+### **Monitoring Integration:**
+- **OpenTelemetry**: Full observability stack
+- **Azure AI Agents Instrumentation**: Native Azure AI Foundry tracing
+- **Application Insights**: Comprehensive telemetry and analytics
+- **Custom Metrics**: Performance and quality tracking
 
-```
-User Query → Coordinator Agent → Research Agent → Analysis Agent → Synthesis Agent → Final Response
-                ↓                    ↓              ↓              ↓
-            Orchestrates        Azure AI      Code Interpreter  Patient-Friendly
-            Workflow           Search Tool    Data Analysis     Response
-```
+## 🚀 Getting Started
 
-## 🧪 **Testing Scenarios**
+1. **Configure Environment**: Set up your Azure AI Foundry and Application Insights credentials
+2. **Install Dependencies**: Run `pip install -r requirements.txt`
+3. **Launch Application**: Run `python app.py`
+4. **Access Interface**: Open http://localhost:7860 in your browser
+5. **Ask Healthcare Questions**: Enter your queries and get comprehensive responses
 
-### **Healthcare Query Examples**
-```bash
-# Diabetes and general health
-"What are the symptoms and risk factors of diabetes?"
-"How does diabetes affect the cardiovascular system?"
-"What are the latest treatment options for Type 2 diabetes?"
+## 📈 Performance Optimization
 
-# Heart health
-"What are the warning signs of a heart attack?"
-"How does high blood pressure affect the body?"
-"What lifestyle changes can improve heart health?"
+The system is optimized for:
+- **Parallel Agent Execution**: Analysis and Synthesis run simultaneously
+- **Efficient Resource Usage**: Optimized Azure AI service calls
+- **Comprehensive Monitoring**: Real-time performance tracking
+- **Patient-Friendly Output**: Clear, actionable healthcare information
 
-# Mental health
-"What are the symptoms of depression and anxiety?"
-"How does stress affect physical health?"
-"What are effective stress management techniques?"
-```
+## 🔒 Security & Compliance
 
+- **Azure AI Foundry**: Enterprise-grade security and compliance
+- **Application Insights**: Secure telemetry and monitoring
+- **Environment Variables**: Secure credential management
+- **Healthcare Focus**: Patient-friendly, evidence-based responses
+
+---
+
+**Built with ❤️ for healthcare professionals and patients**

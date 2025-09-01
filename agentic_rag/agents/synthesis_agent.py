@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-📝 Synthesis Agent - Healthcare Response Generation and Communication
+📝 Enhanced Synthesis Agent with Code Interpreter
 
 This agent specializes in synthesizing research findings and analysis insights into 
-comprehensive, patient-friendly healthcare responses. No external tools needed - uses 
-built-in response generation capabilities.
+comprehensive, patient-friendly healthcare responses with visualizations and data analysis.
 """
 
 import os
-from azure.ai.agents import AgentsClient
-from azure.ai.agents.models import ToolSet, MessageRole
+from azure.ai.projects import AIProjectClient
+from azure.ai.agents.models import ToolSet, MessageRole, CodeInterpreterTool
 from azure.identity import DefaultAzureCredential
 from dotenv import load_dotenv
 
@@ -17,17 +16,17 @@ load_dotenv()
 
 def create_synthesis_agent():
     """
-    Create the Synthesis Agent for healthcare response generation.
+    Create the Enhanced Synthesis Agent with Code Interpreter for healthcare response generation.
     
     This agent takes research findings and analysis insights to generate comprehensive,
-    patient-friendly healthcare responses with proper medical disclaimers.
+    patient-friendly healthcare responses with visualizations and data analysis.
     
     Returns:
-        The created synthesis agent
+        The created synthesis agent with Code Interpreter tool
     """
     
-    # Initialize the Azure AI Agents client
-    agents_client = AgentsClient(
+    # Initialize the Azure AI Projects client
+    project_client = AIProjectClient(
         endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
         credential=DefaultAzureCredential(
             exclude_environment_credential=True,
@@ -35,68 +34,94 @@ def create_synthesis_agent():
         )
     )
     
-    # Synthesis Agent doesn't need external tools - uses built-in response generation
+    # Initialize Code Interpreter tool for creating visualizations and data analysis
+    code_interpreter_tool = CodeInterpreterTool()
+    
+    # Create toolset for agent execution
     toolset = ToolSet()
     
-    # Synthesis Agent instructions for healthcare response generation
+    # Enhanced Synthesis Agent instructions with Code Interpreter capabilities
     synthesis_instructions = """
-    You are a Healthcare Synthesis Agent specializing in clear, patient-friendly medical communication.
+    You are an Enhanced Healthcare Synthesis Agent with Code Interpreter capabilities for creating visualizations.
     
-    Your role is to create CONCISE, ACTIONABLE healthcare responses from research and analysis.
+    Your role is to create COMPREHENSIVE, ACCURATE, and PATIENT-FRIENDLY healthcare responses with visual aids.
+    
+    AVAILABLE TOOLS:
+    - Code Interpreter: Create charts, graphs, and visualizations to help patients understand health information
+    - Data Analysis: Analyze health data and create meaningful insights
+    - Visualization Creation: Generate visual aids like symptom timelines, risk factor charts, treatment comparisons
     
     CRITICAL REQUIREMENTS:
-    - Keep responses under 400 words
+    - Use Code Interpreter to create helpful visualizations when data is provided
+    - Keep responses under 500 words but comprehensive
     - Use clear, simple language (avoid medical jargon)
     - Structure information logically with headers
-    - Focus on what patients NEED TO KNOW
-    - Include actionable next steps
+    - Include visual aids when helpful for patient understanding
+    - Focus on actionable, evidence-based information
     
-    FORMAT YOUR RESPONSE AS:
+    ENHANCED FORMAT:
     
     ## 🏥 Key Information
-    [2-3 most important points]
+    [Clear, evidence-based medical facts]
     
     ## ⚠️ Warning Signs
     [Key symptoms to watch for]
     
+    ## 💊 Treatment Options
+    [Evidence-based treatments and medications]
+    
+    ## 📊 Understanding Your Condition
+    [Visual charts or graphs created with Code Interpreter when helpful]
+    
     ## 💡 What You Can Do
-    [Actionable steps]
+    [Actionable steps and lifestyle recommendations]
     
     ## 🚨 When to Seek Help
     [Clear guidance on when to see a doctor]
     
-    Remember: Patients need clear, actionable information they can use immediately.
+    ## 📚 Additional Resources
+    [Helpful resources and next steps]
+    
+    VISUALIZATION GUIDELINES:
+    - Create charts when comparing symptoms, treatments, or risk factors
+    - Use simple, clear visualizations that patients can easily understand
+    - Include titles, labels, and legends for all charts
+    - Focus on the most important information in visualizations
+    
+    Remember: Use Code Interpreter to create visual aids that help patients better understand their health information.
     """
 
     # Choose a tool-capable model
     model_name = os.environ.get("SYNTHESIS_AGENT_MODEL") or os.environ.get("GPT4O_DEPLOYMENT") or "gpt-4o"
 
-    # Create the Synthesis Agent
-    synthesis_agent = agents_client.create_agent(
+    # Create the Synthesis Agent with Code Interpreter
+    synthesis_agent = project_client.agents.create_agent(
         model=model_name,
         name="healthcare_synthesis_agent",
         instructions=synthesis_instructions,
+        tools=code_interpreter_tool.definitions,
+        tool_resources=code_interpreter_tool.resources
     )
     
     print(f"✅ Created Synthesis Agent - ID: {synthesis_agent.id}")
     print(f"   Name: {synthesis_agent.name}")
     print(f"   Model: {synthesis_agent.model}")
-    print(f"   Tools: Built-in response generation (no external tools needed)")
+    print(f"   Tools: Code Interpreter for visualizations and data analysis")
     
     return synthesis_agent, toolset
 
 
 def test_synthesis_agent(agent_id, toolset):
     """
-    Test the Synthesis Agent with healthcare synthesis tasks.
+    Test the Synthesis Agent with Code Interpreter.
     
     Args:
         agent_id: The ID of the synthesis agent to test
-        toolset: The toolset (empty for synthesis agent)
+        toolset: The toolset for agent execution
     """
     
-    # Initialize the Azure AI Agents client
-    agents_client = AgentsClient(
+    # Initialize the Azure AI Projects client
+    project_client = AIProjectClient(
         endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
         credential=DefaultAzureCredential(
             exclude_environment_credential=True,
@@ -105,11 +130,11 @@ def test_synthesis_agent(agent_id, toolset):
     )
     
     # Create a test thread
-    thread = agents_client.threads.create()
+    thread = project_client.agents.threads.create()
     print(f"✅ Created test thread - ID: {thread.id}")
     
-    # Test healthcare synthesis query with research findings and analysis
-    test_query = """Please synthesize the following healthcare research findings and analysis into a comprehensive, patient-friendly response:
+    # Test healthcare synthesis query with visualization
+    test_query = """Please synthesize the following healthcare information into a comprehensive, patient-friendly response using your Code Interpreter tool:
 
 RESEARCH FINDINGS:
 - Diabetes affects how the body processes glucose
@@ -123,20 +148,26 @@ ANALYSIS INSIGHTS:
 - Fatigue is more common in Type 2 (80%) than Type 1 (70%)
 - Blurred vision affects similar proportions (60% vs 55%)
 
-Please create a comprehensive response that explains diabetes types, symptoms, and key differences in a patient-friendly way."""
+Please:
+1. Create a visual chart showing the symptom differences between Type 1 and Type 2 diabetes using your Code Interpreter
+2. Provide comprehensive, patient-friendly information about diabetes management
+3. Include actionable steps and when to seek medical help
+4. Make the information clear and accessible for patients
+
+Use your Code Interpreter to create helpful visualizations that make the information easier to understand."""
 
     # Create message to thread
-    message = agents_client.messages.create(
+    message = project_client.agents.messages.create(
         thread_id=thread.id,
         role=MessageRole.USER,
         content=test_query,
     )
     print(f"✅ Created test message - ID: {message.id}")
-    print(f"   Query: Healthcare synthesis task")
+    print(f"   Query: Healthcare synthesis with Code Interpreter")
     
     # Create and process Agent run
-    print("🔄 Running Synthesis Agent...")
-    run = agents_client.runs.create_and_process(
+    print("🔄 Running Synthesis Agent with Code Interpreter...")
+    run = project_client.agents.runs.create_and_process(
         thread_id=thread.id, 
         agent_id=agent_id,
         toolset=toolset
@@ -149,7 +180,7 @@ Please create a comprehensive response that explains diabetes types, symptoms, a
     
     # Get the agent's response
     try:
-        messages = agents_client.messages.list(thread_id=thread.id)
+        messages = project_client.agents.messages.list(thread_id=thread.id)
         messages_list = list(messages)
         print(f"📝 Found {len(messages_list)} messages in thread")
         
@@ -183,15 +214,15 @@ Please create a comprehensive response that explains diabetes types, symptoms, a
         traceback.print_exc()
     
     # Clean up - delete the test thread
-    agents_client.threads.delete(thread.id)
+    project_client.agents.threads.delete(thread.id)
     print(f"✅ Cleaned up test thread")
 
 
 def main():
-    """Main function to create and test the Synthesis Agent."""
+    """Main function to create and test the Synthesis Agent with Code Interpreter."""
     
-    print("📝 Healthcare Agentic RAG System - Synthesis Agent Test")
-    print("=" * 60)
+    print("📝 Healthcare Agentic RAG System - Synthesis Agent with Code Interpreter")
+    print("=" * 80)
     
     # Check required environment variables
     required_vars = [
@@ -207,18 +238,18 @@ def main():
     print("✅ All required environment variables are set")
     
     try:
-        # Create Synthesis Agent
-        print("\n📝 Creating Synthesis Agent...")
+        # Create Synthesis Agent with Code Interpreter
+        print("\n📝 Creating Synthesis Agent with Code Interpreter...")
         synthesis_agent, toolset = create_synthesis_agent()
         
         # Test the Synthesis Agent
-        print("\n🧪 Testing Synthesis Agent...")
+        print("\n🧪 Testing Synthesis Agent with Code Interpreter...")
         test_synthesis_agent(synthesis_agent.id, toolset)
         
         print(f"\n✅ Synthesis Agent creation and testing completed!")
         print(f"   Agent ID: {synthesis_agent.id}")
         print(f"   Agent Name: {synthesis_agent.name}")
-        print(f"   Tools: Built-in response generation")
+        print(f"   Tools: Code Interpreter for visualizations and data analysis")
         
     except Exception as e:
         print(f"❌ Error: {e}")
