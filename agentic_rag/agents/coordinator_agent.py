@@ -11,9 +11,7 @@ This coordinator implements:
 
 import os
 import json
-import asyncio
 import concurrent.futures
-import threading
 import time
 from typing import Dict, Any, Optional, Callable
 from azure.ai.projects import AIProjectClient
@@ -171,7 +169,7 @@ class CoordinatorAgent:
                         }
                 
                 # Log failure event
-                azure_tracer.log_custom_event("agent_failed", {
+                azure_monitor.log_custom_event("agent_failed", {
                     "agent_name": agent_name,
                     "agent_id": agent_id,
                     "error": "No response generated"
