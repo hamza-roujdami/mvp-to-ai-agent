@@ -230,9 +230,49 @@ class GradioRAGInterface:
             title="🏥 MVP RAG Healthcare AI Assistant",
             theme=gr.themes.Soft(),
             css="""
-                .gradio-container {max-width: 1200px !important;}
-                .main-header {text-align: center; margin-bottom: 20px;}
-                .metric-box {background: #f0f8ff; padding: 10px; border-radius: 5px;}
+                .gradio-container {
+                    max-width: 1200px !important;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                    min-height: 100vh !important;
+                }
+                .main-header {
+                    text-align: center; 
+                    margin-bottom: 20px;
+                    color: #ffffff !important;
+                }
+                .metric-box {
+                    background: rgba(255, 255, 255, 0.1) !important;
+                    padding: 15px; 
+                    border-radius: 10px;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    color: #ffffff !important;
+                    backdrop-filter: blur(10px);
+                }
+                .gradio-container .gr-form {
+                    background: rgba(255, 255, 255, 0.95) !important;
+                    border-radius: 15px !important;
+                    padding: 20px !important;
+                    margin: 10px !important;
+                    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+                }
+                .gradio-container .gr-button {
+                    background: linear-gradient(45deg, #667eea, #764ba2) !important;
+                    border: none !important;
+                    border-radius: 8px !important;
+                    color: white !important;
+                    font-weight: 600 !important;
+                }
+                .gradio-container .gr-button:hover {
+                    transform: translateY(-2px) !important;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+                }
+                .gradio-container h1, .gradio-container h2, .gradio-container h3 {
+                    color: #ffffff !important;
+                }
+                .gradio-container .gr-textbox, .gradio-container .gr-checkbox {
+                    background: rgba(255, 255, 255, 0.9) !important;
+                    border-radius: 8px !important;
+                }
             """
         ) as app:
             
