@@ -66,15 +66,6 @@ python3 test_complete_workflow.py
 python3 app.py
 ```
 
-## 📁 **Repository Structure**
-
-```
-mvp-to-ai-agent/
-├── mvp_rag/                    # Local MVP RAG
-├── agentic_rag/                # Azure AI Foundry
-└── README.MD                   # This overview
-```
-
 ## 🎯 **What You'll Learn**
 
 - **AI Evolution**: From local MVP to production enterprise systems

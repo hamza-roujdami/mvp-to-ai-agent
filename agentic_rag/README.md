@@ -66,31 +66,6 @@ python3 agents/synthesis_agent.py
 python3 test_complete_workflow.py
 ```
 
-**Expected Output:**
-```
-🏥 HEALTHCARE AGENTIC RAG SYSTEM - COMPLETE WORKFLOW TEST
-✅ All required environment variables are set
-
-🚀 EXECUTING COMPLETE MULTI-AGENT WORKFLOW...
-Query: What are the symptoms and risk factors of diabetes?
-
-🔍 Step 1: Research Agent - Healthcare Document Retrieval
-✅ Research completed: completed
-   Content length: 4641 characters
-
-📊 Step 2: Analysis Agent - Data Analysis & Visualization  
-✅ Analysis completed: completed
-
-📝 Step 3: Synthesis Agent - Response Generation
-✅ Synthesis completed: completed
-   Content length: 5894 characters
-
-🎯 Step 4: Multi-Agent Workflow Summary
-✅ Multi-Agent Workflow completed!
-   Successful agents: 3/3
-   Workflow status: completed
-```
-
 ### **Option 2: Gradio Web UI**
 
 #### **Start the Web Interface**
@@ -115,80 +90,6 @@ User Query → Coordinator Agent → Research Agent → Analysis Agent → Synth
                 ↓                    ↓              ↓              ↓
             Orchestrates        Azure AI      Code Interpreter  Patient-Friendly
             Workflow           Search Tool    Data Analysis     Response
-```
-
-### **Agent Details**
-
-#### **🔍 Research Agent**
-- **Purpose**: Healthcare document retrieval using Azure AI Search
-- **Tools**: Azure AI Search integration with semantic search
-- **Output**: Evidence-based medical information with citations
-- **Model**: GPT-4o with search capabilities
-
-#### **📊 Analysis Agent**  
-- **Purpose**: Data analysis, pattern recognition, and visualization
-- **Tools**: Code Interpreter for statistical analysis and charts
-- **Output**: Insights, comparisons, and visual data representations
-- **Model**: GPT-4o with code execution capabilities
-
-#### **📝 Synthesis Agent**
-- **Purpose**: Generate comprehensive, patient-friendly healthcare responses
-- **Tools**: Built-in response generation (no external tools needed)
-- **Output**: Structured, easy-to-understand medical information
-- **Model**: GPT-4o for natural language generation
-
-#### **🎯 Coordinator Agent**
-- **Purpose**: Orchestrate the complete multi-agent workflow
-- **Function**: Pass outputs between agents and manage the pipeline
-- **Output**: Coordinated final response combining all agent insights
-
-## 📁 **Project Structure**
-
-```
-agentic_rag/
-├── agents/                    # Multi-agent system
-│   ├── research_agent.py     # Azure AI Search agent
-│   ├── analysis_agent.py     # Code Interpreter agent
-│   ├── synthesis_agent.py    # Response generation agent
-│   ├── coordinator_agent.py  # Workflow orchestrator
-│   └── __init__.py
-├── tests/                     # Testing framework
-│   ├── test_research_agent.py
-│   ├── test_analysis_agent.py
-│   ├── test_synthesis_agent.py
-│   ├── test_coordinator_agent.py
-│   └── __init__.py
-├── utils/                     # Utility functions
-│   └── __init__.py
-├── app.py                     # Gradio web interface
-├── test_complete_workflow.py # End-to-end workflow test
-├── requirements.txt           # Python dependencies
-├── config.env.example         # Configuration template
-└── README.md                  # This file
-```
-
-## 🔧 **Configuration**
-
-### **Environment Variables**
-```bash
-# Azure AI Foundry
-AZURE_AI_FOUNDRY_ENDPOINT=https://your-resource.services.ai.azure.com/api/projects/your-project
-AZURE_AI_FOUNDRY_API_KEY=your-api-key
-
-# Azure AI Search
-AZURE_SEARCH_CONNECTION_ID=/subscriptions/.../connections/your-search-connection
-AZURE_SEARCH_INDEX_NAME=your-search-index
-
-# Model Deployments
-GPT4O_DEPLOYMENT=gpt-4o
-GPT4O_MINI_DEPLOYMENT=o4-mini
-TEXT_EMBEDDING_DEPLOYMENT=text-embedding-ada-002
-
-# Agent Models
-COORDINATOR_AGENT_MODEL=gpt-4o
-RESEARCH_AGENT_MODEL=gpt-4o
-ANALYSIS_AGENT_MODEL=gpt-4o
-SYNTHESIS_AGENT_MODEL=gpt-4o
 ```
 
 ## 🧪 **Testing Scenarios**
