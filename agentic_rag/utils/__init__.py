@@ -1,14 +1,14 @@
 """
 🔧 Healthcare Agentic RAG System - Utils Module
 
-This module contains utility scripts for Azure setup, configuration, and maintenance.
+This module contains utility functions for the system.
 """
 
 # Import utility functions for easy access
-from .setup_azure_search import create_search_index_and_upload_documents
-from .check_azure_search import check_azure_search_index
+from .logging_config import configure_logging, enable_debug_logging, disable_all_logging
 
 __all__ = [
-    "create_search_index_and_upload_documents",
-    "check_azure_search_index", 
+    "configure_logging",
+    "enable_debug_logging", 
+    "disable_all_logging",
 ]

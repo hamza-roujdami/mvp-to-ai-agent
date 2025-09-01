@@ -7,7 +7,7 @@ This module contains all the specialized agents for the healthcare agentic RAG s
 from .research_agent import create_research_agent, test_research_agent
 from .analysis_agent import create_analysis_agent, test_analysis_agent
 from .synthesis_agent import create_synthesis_agent, test_synthesis_agent
-from .coordinator_agent import create_coordinator_agent, test_coordinator_agent, execute_multi_agent_workflow
+from .coordinator_agent import execute_multi_agent_workflow
 
 __all__ = [
     # Research Agent - Healthcare document retrieval
@@ -23,7 +23,5 @@ __all__ = [
     "test_synthesis_agent",
     
     # Coordinator Agent - Multi-agent workflow orchestration
-    "create_coordinator_agent",
-    "test_coordinator_agent", 
     "execute_multi_agent_workflow",
 ]

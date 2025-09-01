@@ -274,3 +274,4 @@ Thumbs.db
 # notebooks/
 # results/
 # outputs/
+/agentic_rag/.env

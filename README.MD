@@ -18,6 +18,35 @@ This repository demonstrates the evolution from a **local MVP RAG system** to a 
 - **Multi-Agent Architecture**: Research → Analysis → Synthesis workflow
 - **Production Ready**: Azure AI Search, Code Interpreter, enterprise security
 
+## 🔄 **System Comparison**
+
+```
+MVP RAG (Local)                    Agentic RAG (Azure)
+┌─────────────────────────┐        ┌─────────────────────────┐
+│     Single Agent        │        │   Multi-Agent System    │
+│                         │        │                         │
+│  User Query            │        │  User Query            │
+│       ↓                │        │       ↓                │
+│  Document Search       │        │  Research Agent        │
+│       ↓                │        │  (Azure AI Search)     │
+│  Response Generation   │        │       ↓                │
+│       ↓                │        │  Analysis Agent        │
+│  Final Answer          │        │  (Code Interpreter)    │
+└─────────────────────────┘        │       ↓                │
+                                   │  Synthesis Agent       │
+                                   │  (Response Gen)        │
+                                   │       ↓                │
+                                   │  Coordinated Answer    │
+                                   └─────────────────────────┘
+
+Tech Stack:                        Tech Stack:
+• Ollama (Local)                   • Azure AI Foundry
+• Qdrant (Local)                   • Azure AI Search
+• Single Model                     • Multiple Specialized Models
+• Basic Monitoring                 • Enterprise Security
+• Local Deployment                 • Cloud-Scale Production
+```
+
 ## 🚀 **Quick Start**
 
 ```bash
