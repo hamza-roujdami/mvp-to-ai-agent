@@ -158,7 +158,6 @@ python data/setup_azure_search.py    # Create index
 python data/ingest_healthcare_data.py # Ingest data
 ```
 
-
 ### Sample Healthcare Documents
 The system includes comprehensive healthcare documents covering:
 - **Diabetes Management** - Symptoms, treatment, and management
@@ -204,4 +203,6 @@ Access evaluation results in:
 - **Azure AI Foundry Portal** → Monitoring → Application analytics
 - **Application Insights** → Logs (search for "gen_ai.evaluation.result")
 - **Azure Monitor** → Workbooks for detailed analysis 
+
+
 ---
