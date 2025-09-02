@@ -35,15 +35,6 @@ User → Gradio UI → Azure AI Foundry (4 Connected Agents)
               Comprehensive Response → User
 ```
 
-## 🔄 User Flow
-
-```
-User → Gradio UI → Orchestrator Agent → Research Agent (Azure AI Search)
-                                    → Analysis Agent (Code Interpreter)
-                                    → Synthesis Agent (Code Interpreter)
-                                    → Comprehensive Response → User
-```
-
 ## 🚀 Quick Start
 
 ### 1. Setup Environment
