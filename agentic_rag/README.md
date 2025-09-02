@@ -1,80 +1,47 @@
 # 🏥 HealthAI Nexus
 
-An intelligent healthcare AI system powered by Azure AI Foundry Connected Agents, providing comprehensive medical information through coordinated multi-agent workflows.
+An intelligent healthcare AI system powered by Azure AI Solutions providing comprehensive medical information through coordinated multi-agent workflows.
+
+## 🛠️ Tech Stack
+
+| Category | Technology | Purpose |
+|----------|------------|---------|
+| **AI Platform** | Azure AI Foundry | Agent orchestration and deployment |
+| **AI Models** | GPT-4o | Core language model for all agents |
+| **Agent Framework** | Azure AI Agents SDK | Connected agents implementation |
+| **Search Engine** | Azure AI Search | Document retrieval and indexing |
+| **Web UI** | Gradio | User interface and interaction |
+| **Monitoring** | Azure Monitor + Application Insights | Telemetry and observability |
+| **Observability** | OpenTelemetry | Distributed tracing |
+| **Language** | Python 3.9+ | Backend development |
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TB
-    User[👤 User] --> UI[🌐 HealthAI Nexus UI]
-    UI --> Orchestrator[🎯 Orchestrator Agent]
-    
-    Orchestrator --> Research[🔍 Research Agent]
-    Research --> AzureSearch[📚 Azure AI Search]
-    AzureSearch --> HealthcareDocs[📄 Healthcare Documents]
-    
-    Orchestrator --> Analysis[📊 Analysis Agent]
-    Orchestrator --> Synthesis[📝 Synthesis Agent]
-    
-    Analysis --> CodeInterpreter1[🐍 Code Interpreter]
-    Synthesis --> CodeInterpreter2[🐍 Code Interpreter]
-    
-    Orchestrator --> Monitor[📊 Azure Monitor]
-    Monitor --> AppInsights[📈 Application Insights]
-    
-    Research --> Response[📋 Comprehensive Response]
-    Analysis --> Response
-    Synthesis --> Response
-    Response --> UI
-    
-    subgraph "Azure AI Foundry"
-        Orchestrator
-        Research
-        Analysis
-        Synthesis
-    end
-    
-    subgraph "Data Layer"
-        AzureSearch
-        HealthcareDocs
-    end
+```
+User → Gradio UI → Azure AI Foundry (4 Connected Agents)
+                      ↓
+              ┌─────────────────┐
+              │  Orchestrator   │
+              └─────────────────┘
+                      ↓
+        ┌─────────────┼─────────────┐
+        ↓             ↓             ↓
+   Research Agent  Analysis Agent  Synthesis Agent
+        ↓             ↓             ↓
+   Azure AI Search  Code Interpreter  Code Interpreter
+        ↓             ↓             ↓
+   Healthcare Docs  Data Analysis  Report Generation
+                      ↓
+              Comprehensive Response → User
 ```
 
 ## 🔄 User Flow
 
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant UI as HealthAI Nexus UI
-    participant O as Orchestrator Agent
-    participant R as Research Agent
-    participant A as Analysis Agent
-    participant S as Synthesis Agent
-    participant AS as Azure AI Search
-    participant CI as Code Interpreter
-    
-    U->>UI: Ask healthcare question
-    UI->>O: Start connected agents workflow
-    
-    O->>R: Search medical information
-    R->>AS: Query healthcare documents
-    AS-->>R: Return relevant medical data
-    R-->>O: Research findings
-    
-    par Connected Agents Execution
-        O->>A: Analyze research data
-        A->>CI: Generate insights & visualizations
-        CI-->>A: Analysis results
-        A-->>O: Data insights
-    and
-        O->>S: Synthesize comprehensive response
-        S->>CI: Create patient-friendly content
-        CI-->>S: Formatted response
-        S-->>O: Final healthcare response
-    end
-    
-    O->>UI: Comprehensive medical response
-    UI->>U: Display results with workflow details
+```
+User → Gradio UI → Orchestrator Agent → Research Agent (Azure AI Search)
+                                    → Analysis Agent (Code Interpreter)
+                                    → Synthesis Agent (Code Interpreter)
+                                    → Comprehensive Response → User
 ```
 
 ## 🚀 Quick Start
