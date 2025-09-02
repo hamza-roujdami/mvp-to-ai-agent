@@ -1,242 +1,441 @@
-#!/usr/bin/env python3
 """
-Simplified Healthcare Agentic RAG System for testing.
+Healthcare Connected Agents System - Main Application
+Gradio interface for the connected agents workflow
 """
 
 import gradio as gr
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Verify critical environment variables
+required_vars = ["AZURE_AI_FOUNDRY_ENDPOINT", "AZURE_SEARCH_CONNECTION_ID", "AZURE_SEARCH_INDEX_NAME"]
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    print(f"❌ Missing required environment variables: {missing_vars}")
+    print("Please check your .env file and ensure all required variables are set.")
+    sys.exit(1)
 
 # Add the current directory to the Python path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    from agents.coordinator_agent import execute_multi_agent_workflow
+    from azure.ai.projects import AIProjectClient
+    from azure.ai.agents.models import MessageRole
+    from azure.identity import DefaultAzureCredential
     from monitoring import setup_monitoring
-    print("✅ Successfully imported coordinator and monitoring modules")
-    
-    # Initialize Azure AI Foundry monitoring
-    monitor = setup_monitoring()
-    monitor.set_application_context("healthcare-agentic-rag")
-    print("✅ Azure AI Foundry monitoring initialized with application context")
+    from agents.orchestrator_agent import create_orchestrator_agent
+    print("✅ Successfully imported all required modules")
 except ImportError as e:
     print(f"❌ Import error: {e}")
     sys.exit(1)
 
-class SimpleHealthcareInterface:
-    """Simplified Healthcare Agentic RAG Interface."""
+
+class HealthAINexusApp:
+    """Main application class for the HealthAI Nexus system."""
     
     def __init__(self):
-        """Initialize the interface."""
-        print("✅ Simple healthcare interface initialized successfully")
-    
-    def create_interface(self):
-        """Create the simplified Gradio interface."""
+        """Initialize the application."""
+        self.project_client = None
+        self.orchestrator_agent = None
+        self.agents_created = False
         
-        with gr.Blocks(
-            title="🏥 Healthcare Agentic RAG System",
-            theme=gr.themes.Soft(),
-            css="""
-                .gradio-container {background: #1a202c !important;}
-                .gr-interface {background: #1a202c !important;}
-                .gr-panel {background: #2d3748 !important; border: 2px solid #4a5568 !important; border-radius: 15px !important;}
-                .gr-textbox textarea, .gr-textbox input {color: #e2e8f0 !important; background: #1a202c !important; border: 2px solid #4a5568 !important;}
-                .gr-button {background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important; color: white !important; border: none !important;}
-                .gr-button:hover {background: linear-gradient(135deg, #38a169 0%, #2f855a 100%) !important;}
-                .gr-markdown {color: #e2e8f0 !important;}
-                .gr-markdown h1, .gr-markdown h2, .gr-markdown h3 {color: #48bb78 !important;}
-                .gr-html {background: #1a202c !important; border: 2px solid #4a5568 !important; border-radius: 10px !important; padding: 15px !important;}
-            """
-        ) as app:
+        # Initialize monitoring
+        try:
+            self.monitor = setup_monitoring()
+            self.monitor.set_application_context("healthcare-connected-agents")
+            print("✅ Monitoring initialized")
+        except Exception as e:
+            print(f"⚠️ Monitoring setup failed: {e}")
+            self.monitor = None
+
+    def initialize_agents(self):
+        """Initialize the connected agents system."""
+        try:
+            print("🚀 Initializing Healthcare Connected Agents System...")
             
-            gr.Markdown("""
-            # 🏥 Healthcare Agentic RAG System
-            
-            **Multi-Agent AI System for Healthcare Information**
-            
-            This system uses **4 specialized AI agents** working together to provide comprehensive healthcare responses:
-            
-            🔍 **Research Agent** - Searches Azure AI Search for relevant medical documents and extracts key information with sources  
-            📊 **Analysis Agent** - Uses Code Interpreter to analyze data, create visualizations, and identify patterns  
-            📝 **Synthesis Agent** - Generates patient-friendly healthcare responses by combining research and analysis  
-            🎯 **Coordinator Agent** - Orchestrates the complete workflow: Research → Analysis → Synthesis → Final Response  
-            
-            **🔍 All traces are automatically sent to Azure Application Insights**
-            """)
-            
-            with gr.Row():
-                with gr.Column(scale=2):
-                    query_input = gr.Textbox(
-                        label="Health Question",
-                        placeholder="Ask a healthcare question...",
-                        lines=3
-                    )
-                    
-                    submit_btn = gr.Button("Submit", variant="primary")
-                
-                with gr.Column(scale=1):
-                    gr.Markdown("### Example Questions:")
-                    example_btn_1 = gr.Button("🩺 Diabetes Symptoms", size="sm")
-                    example_btn_2 = gr.Button("💊 Blood Pressure", size="sm")
-                    example_btn_3 = gr.Button("🫀 Heart Disease", size="sm")
-            
-            # Progress indicator
-            progress_bar = gr.Progress()
-            
-            # Status display
-            status_display = gr.HTML(
-                label="Workflow Status",
-                value="<div style='color: #e2e8f0; background: #2d3748; padding: 15px; border-radius: 10px; text-align: center;'>Ready to process your healthcare question</div>"
+            # Initialize the client
+            self.project_client = AIProjectClient(
+                endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
+                credential=DefaultAzureCredential(),
             )
             
-            # Main output
-            output = gr.HTML(
-                label="Multi-Agent Response",
-                value="<div style='color: #e2e8f0; background: #2d3748; padding: 20px; border-radius: 10px;'>Submit a health question to see the multi-agent workflow in action!</div>"
+            # Create the orchestrator and connected agents
+            agents = create_orchestrator_agent(self.project_client)
+            self.orchestrator_agent = agents["orchestrator"]
+            self.agents_created = True
+            
+            print("✅ Connected Agents System Initialized Successfully!")
+            print(f"   Orchestrator Agent ID: {self.orchestrator_agent.id}")
+            print(f"   Research Agent ID: {agents['research_agent'].id}")
+            print(f"   Analysis Agent ID: {agents['analysis_agent'].id}")
+            print(f"   Synthesis Agent ID: {agents['synthesis_agent'].id}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Failed to initialize connected agents: {e}")
+            return False
+
+    def process_healthcare_query(self, query, show_agents=True, progress=gr.Progress()):
+        """Process a healthcare query using the connected agents system."""
+        
+        if not self.agents_created:
+            return "❌ Connected agents not initialized. Please restart the app.", "", ""
+        
+        try:
+            progress(0.1, desc="🚀 Starting connected agents workflow...")
+            
+            # Create a thread
+            thread = self.project_client.agents.threads.create()
+            progress(0.2, desc="💬 Created conversation thread...")
+            
+            # Add the user message
+            message = self.project_client.agents.messages.create(
+                thread_id=thread.id,
+                role=MessageRole.USER,
+                content=query,
+            )
+            progress(0.3, desc="📝 Added query to thread...")
+            
+            # Run the orchestrator agent
+            progress(0.4, desc="🎯 Running orchestrator agent...")
+            run = self.project_client.agents.runs.create_and_process(
+                thread_id=thread.id, 
+                agent_id=self.orchestrator_agent.id
             )
             
-            # Event handlers
-            def process_query(query, progress=gr.Progress()):
-                if not query.strip():
-                    return (
-                        "<div style='color: #e2e8f0; background: #2d3748; padding: 20px; border-radius: 10px;'>Please enter a health question.</div>",
-                        "<div style='color: #f56565; background: #2d3748; padding: 15px; border-radius: 10px; text-align: center;'>No query provided</div>"
-                    )
+            progress(0.8, desc="⏳ Processing with connected agents...")
+            
+            if run.status == "completed":
+                # Get the response
+                messages = self.project_client.agents.messages.list(thread_id=thread.id)
+                messages_list = list(messages)
                 
-                try:
-                    # Update status
-                    status_html = "<div style='color: #4299e1; background: #2d3748; padding: 15px; border-radius: 10px; text-align: center;'>🚀 Starting multi-agent workflow...</div>"
+                # Find the latest assistant message
+                assistant_messages = [msg for msg in messages_list if str(msg.role) == "MessageRole.AGENT"]
+                
+                if assistant_messages:
+                    response_message = assistant_messages[-1]
                     
-                    # Execute the multi-agent workflow with progress updates
-                    progress(0.1, desc="Initializing agents...")
+                    # Extract the response content
+                    response_content = ""
+                    if hasattr(response_message, 'content') and response_message.content:
+                        for content_item in response_message.content:
+                            if hasattr(content_item, 'text'):
+                                text_content = content_item.text
+                                if hasattr(text_content, 'value'):
+                                    text_value = text_content.value
+                                    if text_value and text_value.strip() != "ASSISTANT":
+                                        response_content += text_value + "\n"
+                                else:
+                                    if text_content and str(text_content).strip() != "ASSISTANT":
+                                        response_content += str(text_content) + "\n"
+                            else:
+                                content_str = str(content_item)
+                                if content_str and content_str.strip() != "ASSISTANT":
+                                    response_content += content_str + "\n"
                     
-                    def progress_callback(message):
-                        progress(0.3, desc=message)
-                        return message
+                    progress(1.0, desc="✅ Connected agents workflow completed!")
                     
-                    result = execute_multi_agent_workflow(query, progress_callback)
+                    # Generate workflow info
+                    workflow_info = ""
+                    if show_agents:
+                        workflow_info = f"""
+### 🤖 Agent Workflow Details
+
+**Orchestrator Agent:** {self.orchestrator_agent.name} (ID: {self.orchestrator_agent.id})
+
+**Connected Agents Used:**
+- 🔍 **Research Agent:** Searched medical information using Azure AI Search
+- 📊 **Analysis Agent:** Analyzed data and created visualizations  
+- 📝 **Synthesis Agent:** Created comprehensive reports and summaries
+
+**Workflow Status:** ✅ Completed Successfully
+**Thread ID:** {thread.id}
+**Run ID:** {run.id}
+                        """
                     
-                    progress(1.0, desc="Workflow completed!")
-                    
-                    # Format the response with detailed agent information
-                    research_content = result.get('research', {}).get('content', 'No research data')
-                    analysis_content = result.get('analysis', {}).get('content', 'No analysis data')
-                    synthesis_content = result.get('synthesis', {}).get('content', 'No synthesis data')
-                    
-                    # Clean and format the content for better display
-                    def format_content(content, max_length=800):
-                        if not content or content == 'No research data' or content == 'No analysis data' or content == 'No synthesis data':
-                            return content
-                        
-                        # Clean up any JSON artifacts or formatting issues
-                        content = str(content).strip()
-                        
-                        # If it's too long, truncate and add ellipsis
-                        if len(content) > max_length:
-                            content = content[:max_length] + "..."
-                        
-                        return content
-                    
-                    research_formatted = format_content(research_content)
-                    analysis_formatted = format_content(analysis_content)
-                    synthesis_formatted = format_content(synthesis_content, 2000)  # Allow longer synthesis
-                    
-                    response_html = f"""
-                    <div style='padding: 20px; background: #2d3748; border-radius: 10px; color: #e2e8f0;'>
-                        <h3 style='color: #48bb78; margin-bottom: 20px;'>🏥 Multi-Agent Healthcare Response</h3>
-                        <div style='background: #1a202c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #48bb78;'>
-                            <p style='margin: 0; font-size: 1.1em;'><strong>Query:</strong> {query}</p>
-                        </div>
-                        
-                        <div style='margin: 25px 0;'>
-                            <h4 style='color: #4299e1; margin-bottom: 10px; display: flex; align-items: center;'>
-                                🔍 Research Agent Results
-                                <span style='margin-left: 10px; font-size: 0.8em; color: #718096;'>(Medical Document Search)</span>
-                            </h4>
-                            <div style='background: #1a202c; padding: 20px; border-radius: 8px; color: #e2e8f0; border: 1px solid #4a5568; max-height: 250px; overflow-y: auto; line-height: 1.6;'>
-                                <div style='white-space: pre-wrap; font-family: "Segoe UI", sans-serif;'>{research_formatted}</div>
-                            </div>
-                        </div>
-                        
-                        <div style='margin: 25px 0;'>
-                            <h4 style='color: #ed8936; margin-bottom: 10px; display: flex; align-items: center;'>
-                                📊 Analysis Agent Results
-                                <span style='margin-left: 10px; font-size: 0.8em; color: #718096;'>(Data Analysis & Insights)</span>
-                            </h4>
-                            <div style='background: #1a202c; padding: 20px; border-radius: 8px; color: #e2e8f0; border: 1px solid #4a5568; max-height: 250px; overflow-y: auto; line-height: 1.6;'>
-                                <div style='white-space: pre-wrap; font-family: "Segoe UI", sans-serif;'>{analysis_formatted}</div>
-                            </div>
-                        </div>
-                        
-                        <div style='margin: 25px 0;'>
-                            <h4 style='color: #48bb78; margin-bottom: 10px; display: flex; align-items: center;'>
-                                📝 Final Synthesis
-                                <span style='margin-left: 10px; font-size: 0.8em; color: #718096;'>(Patient-Friendly Response)</span>
-                            </h4>
-                            <div style='background: #1a202c; padding: 20px; border-radius: 8px; color: #e2e8f0; border: 1px solid #4a5568; line-height: 1.6;'>
-                                <div style='white-space: pre-wrap; font-family: "Segoe UI", sans-serif;'>{synthesis_formatted}</div>
-                            </div>
-                        </div>
-                        
-                        <div style='margin-top: 25px; padding: 20px; background: #1a202c; border-radius: 8px; border: 1px solid #4a5568;'>
-                            <h4 style='color: #48bb78; margin-bottom: 15px;'>📊 Workflow Summary</h4>
-                            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 15px;'>
-                                <div>
-                                    <p style='margin: 5px 0;'><strong>Status:</strong> <span style='color: #48bb78;'>{result.get('summary', {}).get('workflow_status', 'Unknown')}</span></p>
-                                    <p style='margin: 5px 0;'><strong>Execution Time:</strong> <span style='color: #4299e1;'>{result.get('summary', {}).get('execution_time', 'N/A')}s</span></p>
-                                </div>
-                                <div>
-                                    <p style='margin: 5px 0;'><strong>Successful Agents:</strong> <span style='color: #48bb78;'>{result.get('summary', {}).get('successful_agents', 'N/A')}/{result.get('summary', {}).get('total_agents', 'N/A')}</span></p>
-                                    <p style='margin: 5px 0;'><strong>Trace ID:</strong> <span style='color: #718096; font-family: monospace; font-size: 0.9em;'>{result.get('summary', {}).get('trace_id', 'N/A')}</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    # Generate system status
+                    system_status = f"""
+### 📊 System Status
+
+**✅ Connected Agents System:** Operational
+**🎯 Orchestrator Agent:** Active
+**🔗 Agent Coordination:** Successful
+**📈 Azure AI Foundry:** Connected
+**🔍 Azure AI Search:** Integrated
+**⏱️ Response Time:** {run.created_at} - {run.completed_at if hasattr(run, 'completed_at') else 'N/A'}
+
+**⚠️ Medical Disclaimer:** This system provides general health information only. Always consult with qualified healthcare professionals for medical advice, diagnosis, or treatment.
                     """
                     
-                    # Update status to completed
-                    final_status = f"<div style='color: #48bb78; background: #2d3748; padding: 15px; border-radius: 10px; text-align: center;'>✅ Workflow completed successfully! Execution time: {result.get('summary', {}).get('execution_time', 'N/A')}s</div>"
+                    # Clean up
+                    self.project_client.agents.threads.delete(thread.id)
                     
-                    return response_html, final_status
-                    
-                except Exception as e:
-                    error_response = f"<div style='color: #f56565; background: #2d3748; padding: 20px; border-radius: 10px;'>Error: {str(e)}</div>"
-                    error_status = f"<div style='color: #f56565; background: #2d3748; padding: 15px; border-radius: 10px; text-align: center;'>❌ Workflow failed: {str(e)}</div>"
-                    return error_response, error_status
-            
-            # Connect the submit button
-            submit_btn.click(
-                process_query,
-                inputs=query_input,
-                outputs=[output, status_display]
-            )
-            
-            # Connect example buttons
-            example_btn_1.click(lambda: "What are the symptoms of diabetes?", outputs=query_input)
-            example_btn_2.click(lambda: "How can I manage high blood pressure?", outputs=query_input)
-            example_btn_3.click(lambda: "What are the risk factors for heart disease?", outputs=query_input)
-        
-        return app
+                    final_response = response_content.strip() if response_content.strip() else "❌ No response content received from connected agents."
+                    return final_response, workflow_info, system_status
+                else:
+                    progress(1.0, desc="❌ No response received")
+                    return "❌ No response received from the connected agents.", "", ""
+            else:
+                progress(1.0, desc="❌ Workflow failed")
+                error_msg = f"❌ Connected agents workflow failed: {run.last_error}"
+                return error_msg, "", ""
+                
+        except Exception as e:
+            progress(1.0, desc="❌ Error occurred")
+            print(f"❌ Error processing query: {e}")
+            error_msg = f"❌ Error processing query: {str(e)}"
+            return error_msg, "", ""
+
+
+def create_gradio_interface():
+    """Create the Gradio interface for the connected agents app."""
     
-    def launch(self):
-        """Launch the interface."""
-        app = self.create_interface()
-        app.launch(
+    app = HealthAINexusApp()
+    
+    # Initialize connected agents
+    if not app.initialize_agents():
+        return None
+    
+    # Create the Gradio interface with beautiful design
+    with gr.Blocks(
+        title="🏥 HealthAI Nexus",
+        theme=gr.themes.Soft(),
+        css="""
+            .gradio-container {
+                max-width: 1200px !important;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                min-height: 100vh !important;
+            }
+            .main-header {
+                text-align: center; 
+                margin-bottom: 20px;
+                color: #ffffff !important;
+            }
+            .metric-box {
+                background: rgba(255, 255, 255, 0.1) !important;
+                padding: 15px; 
+                border-radius: 10px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: #ffffff !important;
+                backdrop-filter: blur(10px);
+            }
+            .gradio-container .gr-form {
+                background: rgba(255, 255, 255, 0.95) !important;
+                border-radius: 15px !important;
+                padding: 20px !important;
+                margin: 10px !important;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+            }
+            .gradio-container .gr-button {
+                background: linear-gradient(45deg, #667eea, #764ba2) !important;
+                border: none !important;
+                border-radius: 8px !important;
+                color: white !important;
+                font-weight: 600 !important;
+            }
+            .gradio-container .gr-button:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+            }
+            .gradio-container h1, .gradio-container h2, .gradio-container h3 {
+                color: #ffffff !important;
+            }
+            .gradio-container .gr-textbox, .gradio-container .gr-checkbox {
+                background: rgba(255, 255, 255, 0.9) !important;
+                border-radius: 8px !important;
+            }
+            .agent-info {
+                background: rgba(255, 255, 255, 0.1) !important;
+                padding: 20px; 
+                border-radius: 15px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                color: #ffffff !important;
+                backdrop-filter: blur(10px);
+                margin: 20px 0;
+            }
+        """
+    ) as interface:
+        
+        # Header section
+        gr.Markdown("""
+        # 🏥 HealthAI Nexus
+        
+        **Intelligent Healthcare AI System**
+        
+        Ask any health-related question and experience our intelligent multi-agent system:
+        - 🔍 **Research Agent** searches medical information using Azure AI Search
+        - 📊 **Analysis Agent** analyzes data and creates visualizations  
+        - 📝 **Synthesis Agent** creates comprehensive reports and summaries
+        - 🎯 **Orchestrator** coordinates the workflow between all agents
+        - ⚠️ Includes appropriate medical disclaimers
+        """, elem_classes=["main-header"])
+        
+
+        
+        # Main input section
+        with gr.Row():
+            with gr.Column(scale=3):
+                query_input = gr.Textbox(
+                    label="🏥 Your Health Question",
+                    placeholder="e.g., What are the symptoms of diabetes?",
+                    lines=3,
+                    max_lines=5
+                )
+            
+            with gr.Column(scale=1):
+                show_agents = gr.Checkbox(
+                    label="🤖 Show Agent Workflow",
+                    value=True,
+                    info="Display the agent coordination process"
+                )
+        
+        # Submit button
+        submit_btn = gr.Button(
+            "🚀 Get AI Response",
+            variant="primary",
+            size="lg"
+        )
+        
+        # Example prompts section
+        gr.Markdown("### 💡 **Try These Example Queries:**")
+        
+        with gr.Row():
+            with gr.Column(scale=1):
+                example_btn_1 = gr.Button(
+                    "🩺 Diabetes Symptoms",
+                    size="sm",
+                    variant="secondary"
+                )
+                example_btn_2 = gr.Button(
+                    "💊 Blood Pressure Meds",
+                    size="sm",
+                    variant="secondary"
+                )
+            
+            with gr.Column(scale=1):
+                example_btn_3 = gr.Button(
+                    "🫀 Heart Attack Signs",
+                    size="sm",
+                    variant="secondary"
+                )
+                example_btn_4 = gr.Button(
+                    "🦠 COVID-19 Guidelines",
+                    size="sm",
+                    variant="secondary"
+                )
+            
+            with gr.Column(scale=1):
+                example_btn_5 = gr.Button(
+                    "🧠 Mental Health Support",
+                    size="sm",
+                    variant="secondary"
+                )
+                example_btn_6 = gr.Button(
+                    "👶 Pregnancy Care",
+                    size="sm",
+                    variant="secondary"
+                )
+        
+        # Output sections
+        with gr.Row():
+            with gr.Column(scale=2):
+                response_output = gr.Markdown(
+                    label="🤖 AI Response",
+                    value="Ask a health question to get started...",
+                    elem_classes=["response-box"]
+                )
+            
+            with gr.Column(scale=1):
+                workflow_output = gr.Markdown(
+                    label="🤖 System Workflow",
+                    value="Agent workflow will appear here when you ask a question...",
+                    elem_classes=["context-box"]
+                )
+        
+        # Performance metrics
+        metrics_output = gr.Markdown(
+            label="📊 System Status",
+            value="System status will appear here after your first query...",
+            elem_classes=["metric-box"]
+        )
+        
+        # Event handlers
+        submit_btn.click(
+            fn=app.process_healthcare_query,
+            inputs=[query_input, show_agents],
+            outputs=[response_output, workflow_output, metrics_output],
+            api_name="query_connected_agents",
+            queue=True  # Enable streaming for better UX
+        )
+        
+        # Enter key support
+        query_input.submit(
+            fn=app.process_healthcare_query,
+            inputs=[query_input, show_agents],
+            outputs=[response_output, workflow_output, metrics_output],
+            api_name="query_connected_agents_enter",
+            queue=True
+        )
+        
+        # Example button handlers
+        example_btn_1.click(
+            fn=lambda: "What are the common symptoms of diabetes and how can I recognize them?",
+            outputs=[query_input]
+        )
+        
+        example_btn_2.click(
+            fn=lambda: "What are the different types of blood pressure medications and their side effects?",
+            outputs=[query_input]
+        )
+        
+        example_btn_3.click(
+            fn=lambda: "What are the warning signs and symptoms of a heart attack?",
+            outputs=[query_input]
+        )
+        
+        example_btn_4.click(
+            fn=lambda: "What are the current COVID-19 vaccination guidelines for adults?",
+            outputs=[query_input]
+        )
+        
+        example_btn_5.click(
+            fn=lambda: "What are the signs of depression and anxiety, and what support resources are available?",
+            outputs=[query_input]
+        )
+        
+        example_btn_6.click(
+            fn=lambda: "What are the important prenatal care guidelines and what should I expect during pregnancy?",
+            outputs=[query_input]
+        )
+    
+    return interface
+
+
+if __name__ == "__main__":
+    print("🚀 Starting HealthAI Nexus App...")
+    print("=" * 60)
+    
+    interface = create_gradio_interface()
+    
+    if interface:
+        print("\n✅ Gradio interface created successfully!")
+        print("🌐 Starting web server...")
+        print("📱 Access the app at: http://localhost:7860")
+        print("=" * 60)
+        
+        interface.launch(
             server_name="0.0.0.0",
             server_port=7860,
             share=False,
             show_error=True,
             quiet=False
         )
-
-def main():
-    """Main entry point."""
-    try:
-        interface = SimpleHealthcareInterface()
-        interface.launch()
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        print("Please check your Azure AI Foundry configuration.")
-
-if __name__ == "__main__":
-    main()
+    else:
+        print("❌ Failed to create Gradio interface")
+        sys.exit(1)

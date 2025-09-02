@@ -1,240 +1,130 @@
-#!/usr/bin/env python3
 """
-📝 Research Agent - Healthcare Document Retrieval with Azure AI Search
-
-This agent specializes in searching healthcare documents using Azure AI Search
-and providing evidence-based medical information with proper citations.
+Healthcare Research Agent - Connected Agents Implementation
+Searches for medical information using Azure AI Search
 """
 
 import os
 from azure.ai.projects import AIProjectClient
-from azure.ai.agents.models import (
-    AzureAISearchTool, 
-    AzureAISearchQueryType,
-    AgentsNamedToolChoice,
-    MessageRole
-)
+from azure.ai.agents.models import AzureAISearchTool, MessageRole
 from azure.identity import DefaultAzureCredential
-from dotenv import load_dotenv
 
-load_dotenv()
 
-def create_research_agent():
+def create_research_agent(project_client=None, model_name=None):
     """
-    Create the Research Agent for healthcare document retrieval.
+    Create a healthcare research agent with Azure AI Search capabilities.
     
-    This agent uses Azure AI Search to find relevant healthcare documents
-    and provides evidence-based medical information.
-    
+    Args:
+        project_client: Optional AIProjectClient instance
+        model_name: Optional model name override
+        
     Returns:
-        The created research agent
+        tuple: (research_agent, search_tool)
     """
-    
-    # Initialize the Azure AI Projects client
-    project_client = AIProjectClient(
-        endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
-        credential=DefaultAzureCredential(
-            exclude_environment_credential=True,
-            exclude_managed_identity_credential=True
+    if project_client is None:
+        project_client = AIProjectClient(
+            endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
+            credential=DefaultAzureCredential(),
         )
-    )
     
-    # Create Azure AI Search tool with proper configuration
+    if model_name is None:
+        model_name = os.environ.get("GPT4O_DEPLOYMENT") or "gpt-4o"
+    
+    # Create Azure AI Search tool
     search_tool = AzureAISearchTool(
         index_connection_id=os.environ["AZURE_SEARCH_CONNECTION_ID"],
-        index_name=os.environ["AZURE_SEARCH_INDEX_NAME"],
-        query_type=AzureAISearchQueryType.SIMPLE,  # Use SIMPLE for compatibility
-        top_k=10
+        index_name=os.environ["AZURE_SEARCH_INDEX_NAME"]
     )
     
-    # Research Agent instructions for healthcare document retrieval
-    research_instructions = """
-    You are a Healthcare Research Agent specializing in concise, focused medical information retrieval.
-    
-    Your role is to find and extract the MOST RELEVANT healthcare information from documents.
-    
-    CRITICAL REQUIREMENTS:
-    - Keep responses under 300 words
-    - Focus on KEY FACTS only (symptoms, risk factors, treatments)
-    - Use bullet points and clear formatting
-    - Avoid medical jargon - use patient-friendly language
-    - Prioritize actionable information over academic details
-    
-    FORMAT YOUR RESPONSE AS:
-    • Key Finding 1
-    • Key Finding 2
-    • Key Finding 3
-    
-    Sources: [Document reference]
-    
-    Remember: Patients need clear, actionable information, not medical textbooks.
-    """
-
-    # Choose a tool-capable model
-    model_name = os.environ.get("RESEARCH_AGENT_MODEL") or os.environ.get("GPT4O_DEPLOYMENT") or "gpt-4o"
-
-    # Create the Research Agent with proper tool binding
+    # Create the research agent
     research_agent = project_client.agents.create_agent(
         model=model_name,
         name="healthcare_research_agent",
-        instructions=research_instructions,
-        tools=search_tool.definitions,  # Pass tool definitions
-        tool_resources=search_tool.resources,  # Pass tool resources
+        instructions="""You are a healthcare research specialist. Your responsibilities include:
+
+- Search for relevant medical information using Azure AI Search
+- Find evidence-based healthcare content and research papers
+- Provide accurate, up-to-date medical information
+- Focus on finding reliable sources and citations
+- Always search thoroughly and provide comprehensive research results
+
+When searching, use specific medical terms and be thorough in your research approach.""",
+        tools=search_tool.definitions,
+        tool_resources=search_tool.resources,
     )
-    
-    print(f"✅ Created Research Agent - ID: {research_agent.id}")
-    print(f"   Name: {research_agent.name}")
-    print(f"   Model: {research_agent.model}")
-    print(f"   Tools: Azure AI Search integration")
     
     return research_agent, search_tool
 
 
-def test_research_agent(agent_id, search_tool):
-    """
-    Test the Research Agent with a healthcare query.
-    
-    Args:
-        agent_id: The ID of the research agent to test
-        search_tool: The Azure AI Search tool
-    """
-    
-    # Initialize the Azure AI Projects client
-    project_client = AIProjectClient(
-        endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
-        credential=DefaultAzureCredential(
-            exclude_environment_credential=True,
-            exclude_managed_identity_credential=True
-        )
-    )
-    
-    # Create a test thread
-    thread = project_client.agents.threads.create()
-    print(f"✅ Created test thread - ID: {thread.id}")
-    
-    # Test healthcare query
-    test_query = "What are the common symptoms of diabetes?"
-    
-    # Create message to thread
-    message = project_client.agents.messages.create(
-        thread_id=thread.id,
-        role=MessageRole.USER,
-        content=test_query,
-    )
-    print(f"✅ Created test message - ID: {message.id}")
-    print(f"   Query: {test_query}")
-    
-    # Create and process Agent run with FORCED tool usage
-    print("🔄 Running Research Agent with forced Azure AI Search usage...")
-    
-    # Force the agent to use Azure AI Search tool
-    tool_choice = AgentsNamedToolChoice(type="azure_ai_search")
-    
-    run = project_client.agents.runs.create_and_process(
-        thread_id=thread.id, 
-        agent_id=agent_id,
-        tool_choice=tool_choice,  # Force tool usage
-    )
-    print(f"✅ Run created - ID: {run.id}")
-    print(f"   Initial status: {run.status}")
-    
-    # Monitor the run
-    while run.status in ["queued", "in_progress", "requires_action"]:
-        run = project_client.agents.runs.retrieve(
-            thread_id=thread.id,
-            run_id=run.id
-        )
-        print(f"   Status: {run.status}")
-        
-        if run.status == "requires_action":
-            print(f"   🔧 Tool action required!")
-            if hasattr(run, 'required_action') and run.required_action:
-                print(f"   Required action: {run.required_action}")
-        
-        if run.status == "failed":
-            print(f"   ❌ Run failed: {run.last_error}")
-            return
-    
-    print(f"✅ Final run status: {run.status}")
-    
-    # Get the agent's response
+def test_research_agent():
+    """Test the research agent with a healthcare query."""
     try:
-        messages = list(project_client.agents.messages.list(thread_id=thread.id))
-        print(f"📝 Found {len(messages)} messages in thread")
-        
-        # Find the assistant's response (last message from assistant)
-        assistant_messages = [msg for msg in messages if msg.role.value == "assistant"]
-        print(f"🤖 Found {len(assistant_messages)} assistant messages")
-        
-        if assistant_messages:
-            response_message = assistant_messages[-1]  # Get the last assistant message
-            print(f"\n🔍 Research Agent Response:")
-            
-            # Extract the text content from the response
-            if isinstance(response_message.content, list) and len(response_message.content) > 0:
-                for content_item in response_message.content:
-                    if isinstance(content_item, dict):
-                        if content_item.get('type') == 'text':
-                            text_content = content_item.get('text', {}).get('value', '')
-                            print(f"   {text_content}")
-                        else:
-                            print(f"   {content_item}")
-                    else:
-                        print(f"   {content_item}")
-            else:
-                print(f"   {response_message.content}")
-        else:
-            print("❌ No assistant messages found")
-            
-    except Exception as e:
-        print(f"❌ Error retrieving response: {e}")
-        import traceback
-        traceback.print_exc()
-    
-    # Clean up - delete the test thread
-    project_client.agents.threads.delete(thread.id)
-    print(f"✅ Cleaned up test thread")
-
-
-def main():
-    """Main function to create and test the Research Agent."""
-    
-    print("🔍 Healthcare Agentic RAG System - Research Agent Test")
-    print("=" * 60)
-    
-    # Check required environment variables
-    required_vars = [
-        "AZURE_AI_FOUNDRY_ENDPOINT",
-        "AZURE_AI_FOUNDRY_API_KEY",
-        "AZURE_SEARCH_CONNECTION_ID"
-    ]
-    
-    missing_vars = [var for var in required_vars if not os.environ.get(var)]
-    if missing_vars:
-        print(f"❌ Missing required environment variables: {missing_vars}")
-        return
-    
-    print("✅ All required environment variables are set")
-    
-    try:
-        # Create Research Agent
-        print("\n🔍 Creating Research Agent...")
+        # Create the research agent
         research_agent, search_tool = create_research_agent()
         
-        # Test the Research Agent
-        print("\n🧪 Testing Research Agent...")
-        test_research_agent(research_agent.id, search_tool)
+        # Initialize client for testing
+        project_client = AIProjectClient(
+            endpoint=os.environ["AZURE_AI_FOUNDRY_ENDPOINT"],
+            credential=DefaultAzureCredential(),
+        )
         
-        print(f"\n✅ Research Agent creation and testing completed!")
-        print(f"   Agent ID: {research_agent.id}")
-        print(f"   Agent Name: {research_agent.name}")
-        print(f"   Tools: Azure AI Search integration")
+        # Create a thread and test query
+        thread = project_client.agents.threads.create()
+        test_query = "What are the latest treatments for diabetes?"
         
+        # Add test message
+        message = project_client.agents.messages.create(
+            thread_id=thread.id,
+            role=MessageRole.USER,
+            content=test_query,
+        )
+        
+        # Run the agent
+        run = project_client.agents.runs.create_and_process(
+            thread_id=thread.id, 
+            agent_id=research_agent.id
+        )
+        
+        if run.status == "completed":
+            # Get the response
+            messages = project_client.agents.messages.list(thread_id=thread.id)
+            messages_list = list(messages)
+            
+            # Find the latest assistant message
+            assistant_messages = [msg for msg in messages_list if str(msg.role) == "MessageRole.AGENT"]
+            
+            if assistant_messages:
+                response_message = assistant_messages[-1]
+                response_content = ""
+                
+                if hasattr(response_message, 'content') and response_message.content:
+                    for content_item in response_message.content:
+                        if hasattr(content_item, 'text'):
+                            text_content = content_item.text
+                            if hasattr(text_content, 'value'):
+                                text_value = text_content.value
+                                if text_value and text_value.strip() != "ASSISTANT":
+                                    response_content += text_value + "\n"
+                            else:
+                                if text_content and str(text_content).strip() != "ASSISTANT":
+                                    response_content += str(text_content) + "\n"
+                
+                # Clean up
+                project_client.agents.threads.delete(thread.id)
+                
+                return response_content.strip() if response_content.strip() else "No response content received"
+            else:
+                project_client.agents.threads.delete(thread.id)
+                return "No response received from research agent"
+        else:
+            project_client.agents.threads.delete(thread.id)
+            return f"Research agent test failed: {run.last_error}"
+            
     except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
+        return f"Error testing research agent: {str(e)}"
 
 
 if __name__ == "__main__":
-    main()
+    result = test_research_agent()
+    print("Research Agent Test Result:")
+    print("=" * 50)
+    print(result)
