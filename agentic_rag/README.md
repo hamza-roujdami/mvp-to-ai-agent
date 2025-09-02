@@ -168,14 +168,40 @@ The system includes comprehensive healthcare documents covering:
 - **Pregnancy Care** - Prenatal health and guidelines
 - **Blood Pressure Management** - Hypertension treatment
 
-## 🔍 Tracing & Monitoring
+## 🔍 Tracing
 
 The system includes comprehensive tracing for complete observability of the multi-agent workflow using the [Azure AI Foundry Tracing SDK](https://learn.microsoft.com/en-us/azure/ai/foundry/how-to/develop/trace-agents-sdk):
 
 ### Viewing Traces
 Access detailed traces in:
-- **Azure AI Foundry Portal** → Traces tab
+- **Azure AI Foundry Portal** → Tracing tab
 - **Azure Monitor** → Application Insights → Transaction search
 - **Application Insights** → Logs and traces
 
+## 📊 Monitoring
+
+Monitor your generative AI applications with Azure AI Foundry Observability using the [Azure AI Foundry Monitoring documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/monitor-applications):
+
+### Viewing Monitoring Data
+Access monitoring metrics in:
+- **Azure AI Foundry Portal** → Monitoring → Application analytics
+- **Azure Monitor** → Application Insights → Workbooks
+
+## 🔍 Continuous Evaluation
+
+The system includes continuous evaluation for near real-time observability and monitoring of AI agents using the [Azure AI Foundry Continuous Evaluation documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/continuous-evaluation-agents):
+
+### Evaluation Features
+We're using 3 core evaluators for our healthcare agentic system:
+
+For a healthcare AI system, these evaluators provide:
+- Relevance: Critical for medical accuracy
+- Fluency: Essential for patient communication
+- Coherence: Important for treatment recommendations
+
+### Viewing Evaluation Results
+Access evaluation results in:
+- **Azure AI Foundry Portal** → Monitoring → Application analytics
+- **Application Insights** → Logs (search for "gen_ai.evaluation.result")
+- **Azure Monitor** → Workbooks for detailed analysis 
 ---

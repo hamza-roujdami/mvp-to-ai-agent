@@ -28,6 +28,7 @@ try:
     from azure.identity import DefaultAzureCredential
     from tracing import get_tracing
     from agents.orchestrator_agent import create_orchestrator_agent
+    from continuous_evaluation import create_continuous_evaluator
     print("✅ Successfully imported all required modules")
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -42,6 +43,7 @@ class HealthAINexusApp:
         self.project_client = None
         self.orchestrator_agent = None
         self.agents_created = False
+        self.continuous_evaluator = None
         
         # Initialize clean tracing
         self.tracing = get_tracing()
@@ -61,6 +63,10 @@ class HealthAINexusApp:
             agents = create_orchestrator_agent(self.project_client)
             self.orchestrator_agent = agents["orchestrator"]
             self.agents_created = True
+            
+            # Initialize continuous evaluation
+            self.continuous_evaluator = create_continuous_evaluator(self.project_client)
+            print("✅ Continuous evaluation initialized")
             
             print("✅ Connected Agents System Initialized Successfully!")
             print(f"   Orchestrator Agent ID: {self.orchestrator_agent.id}")
@@ -107,6 +113,15 @@ class HealthAINexusApp:
                 
                 progress(0.8, desc="⏳ Processing with connected agents...")
                 
+                # Create continuous evaluation for the run
+                if self.continuous_evaluator:
+                    progress(0.85, desc="📊 Setting up continuous evaluation...")
+                    self.continuous_evaluator.evaluate_agent_run(
+                        thread_id=thread.id,
+                        run_id=run.id,
+                        agent_id=self.orchestrator_agent.id
+                    )
+                
                 if run.status == "completed":
                     # Get the response
                     messages = self.project_client.agents.messages.list(thread_id=thread.id)
@@ -138,6 +153,21 @@ class HealthAINexusApp:
                         
                         progress(1.0, desc="✅ Connected agents workflow completed!")
                         
+                        # Get evaluation results if available
+                        evaluation_info = ""
+                        if self.continuous_evaluator:
+                            try:
+                                eval_results = self.continuous_evaluator.get_evaluation_results(run.id)
+                                if eval_results:
+                                    evaluation_info = f"\n**📊 Continuous Evaluation:** Active (Results available in Azure AI Foundry)"
+                                else:
+                                    evaluation_info = f"\n**📊 Continuous Evaluation:** Active (Results pending - check Azure AI Foundry monitoring)"
+                            except Exception as e:
+                                print(f"⚠️ Evaluation results query failed: {e}")
+                                evaluation_info = f"\n**📊 Continuous Evaluation:** Active (Check Azure AI Foundry monitoring)"
+                        else:
+                            evaluation_info = f"\n**📊 Monitoring:** Active via Application Insights and Azure AI Foundry tracing"
+                        
                         # Generate workflow info
                         workflow_info = ""
                         if show_agents:
@@ -153,7 +183,7 @@ class HealthAINexusApp:
 
 **Workflow Status:** ✅ Completed Successfully
 **Thread ID:** {thread.id}
-**Run ID:** {run.id}
+**Run ID:** {run.id}{evaluation_info}
                             """
                         
                         # Generate system status

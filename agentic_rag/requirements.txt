@@ -7,6 +7,10 @@ azure-ai-agents>=1.0.0b10
 azure-identity>=1.15.0
 azure-core>=1.30.0
 
+# Azure Monitoring
+azure-monitor-opentelemetry>=1.0.0
+azure-monitor-query>=2.0.0
+
 # Azure AI Search for vector storage
 azure-search-documents>=11.4.0
 

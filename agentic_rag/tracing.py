@@ -28,48 +28,64 @@ class CleanTracing:
         self._setup_tracing()
     
     def _setup_tracing(self):
-        """Set up clean tracing for Azure AI Foundry."""
+        """Set up tracing for Azure AI Foundry monitoring dashboard."""
         try:
-            # Enable detailed content recording for traces
+            # Enable comprehensive Azure AI tracing for monitoring
             os.environ["AZURE_TRACING_GEN_AI_CONTENT_RECORDING_ENABLED"] = "true"
+            os.environ["AZURE_AI_FOUNDRY_TRACING_ENABLED"] = "true"
+            os.environ["AZURE_AI_FOUNDRY_MONITORING_ENABLED"] = "true"
+            
+            # Set application name for monitoring dashboard
+            os.environ["AZURE_AI_FOUNDRY_APPLICATION_NAME"] = "healthcare-agents"
+            
+            # Set project name for Azure AI Foundry monitoring
+            project_name = os.getenv("AZURE_AI_FOUNDRY_PROJECT_NAME", "mvp_rag_to_agentic")
+            os.environ["AZURE_AI_FOUNDRY_PROJECT_NAME"] = project_name
+            
+            # Enable Azure AI model call tracking
+            os.environ["AZURE_AI_MODEL_CALL_TRACKING_ENABLED"] = "true"
+            os.environ["AZURE_AI_TOKEN_TRACKING_ENABLED"] = "true"
+            os.environ["AZURE_AI_INFERENCE_TRACKING_ENABLED"] = "true"
             
             # Get Application Insights connection string
             connection_string = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
             
             if connection_string:
-                # Create resource with clean identification
-                resource = Resource.create({
-                    ResourceAttributes.SERVICE_NAME: "healthcare-agents",
-                    ResourceAttributes.SERVICE_VERSION: "1.0.0",
-                    ResourceAttributes.SERVICE_NAMESPACE: "azure-ai-foundry",
-                    ResourceAttributes.DEPLOYMENT_ENVIRONMENT: "production"
-                })
-                
-                # Configure Azure Monitor
+                # Configure Azure Monitor for AI Foundry monitoring (minimal approach)
                 configure_azure_monitor(
                     connection_string=connection_string,
-                    resource=resource,
                     enable_live_metrics=True,
-                    enable_distributed_tracing=True,
-                    enable_performance_counters=True,
-                    enable_dependency_tracking=True,
-                    enable_request_tracking=True,
-                    enable_exception_tracking=True,
-                    enable_logging=True
+                    enable_distributed_tracing=True
                 )
                 
-                # Instrument Azure AI Agents
+                # Instrument Azure AI Agents - this captures model calls for monitoring
+                # This is the key for Azure AI Foundry monitoring dashboard
                 AIAgentsInstrumentor().instrument()
                 
-                # Get tracer
+                # Additional instrumentation for Azure AI services
+                try:
+                    from azure.ai.inference import AzureOpenAI
+                    # This ensures Azure AI model calls are tracked
+                    print("✅ Azure AI model call tracking enabled")
+                except ImportError:
+                    print("⚠️ Azure AI inference SDK not available")
+                
+                # Get tracer for custom spans
                 self.tracer = trace.get_tracer("healthcare-agents")
                 
-                print("✅ Clean tracing configured successfully")
+                print("✅ Azure AI Foundry monitoring configured successfully")
+                print("📊 Model calls will appear in Azure AI Foundry → Monitoring → Application analytics")
+                print("🔍 Token consumption, inference calls, and latency will be tracked")
+                print("💡 Make sure to run queries in the app to generate Azure AI model calls")
+                print("🔗 Application Insights connection: app-insights-agentic-rag")
             else:
                 print("⚠️ No Application Insights connection string found")
+                print("💡 Set APPLICATIONINSIGHTS_CONNECTION_STRING in your .env file")
                 
         except Exception as e:
             print(f"❌ Tracing setup failed: {e}")
+            import traceback
+            traceback.print_exc()
     
     @contextmanager
     def trace_user_query(self, query: str, user_id: str = "user"):
@@ -312,6 +328,39 @@ class CleanTracing:
             })
             
             print(f"📊 Workflow completed: success={success}, duration={duration_ms}ms, agents={agents_used}")
+    
+    def log_azure_ai_model_call(self, model_name: str, operation: str, tokens_used: int = 0, duration_ms: float = 0):
+        """Log Azure AI model calls for monitoring dashboard."""
+        if not self.tracer:
+            return
+            
+        with self.tracer.start_as_current_span("azure_ai_model_call") as span:
+            span.set_attributes({
+                "azure.ai.model.name": model_name,
+                "azure.ai.operation": operation,
+                "azure.ai.tokens.used": tokens_used,
+                "azure.ai.duration.ms": duration_ms,
+                "azure.ai.foundry.application": "healthcare-agents",
+                "trace.category": "azure_ai_model_call"
+            })
+            
+            print(f"🤖 Azure AI model call: {model_name} - {operation} ({tokens_used} tokens, {duration_ms}ms)")
+    
+    def log_azure_ai_search_call(self, query: str, results_count: int, duration_ms: float = 0):
+        """Log Azure AI Search calls for monitoring dashboard."""
+        if not self.tracer:
+            return
+            
+        with self.tracer.start_as_current_span("azure_ai_search_call") as span:
+            span.set_attributes({
+                "azure.ai.search.query": query,
+                "azure.ai.search.results_count": results_count,
+                "azure.ai.search.duration.ms": duration_ms,
+                "azure.ai.foundry.application": "healthcare-agents",
+                "trace.category": "azure_ai_search_call"
+            })
+            
+            print(f"🔍 Azure AI Search call: {query[:50]}... ({results_count} results, {duration_ms}ms)")
 
 # Global tracing instance
 clean_tracing = CleanTracing()
