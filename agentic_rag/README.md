@@ -158,6 +158,7 @@ python data/setup_azure_search.py    # Create index
 python data/ingest_healthcare_data.py # Ingest data
 ```
 
+
 ### Sample Healthcare Documents
 The system includes comprehensive healthcare documents covering:
 - **Diabetes Management** - Symptoms, treatment, and management
@@ -167,6 +168,14 @@ The system includes comprehensive healthcare documents covering:
 - **Pregnancy Care** - Prenatal health and guidelines
 - **Blood Pressure Management** - Hypertension treatment
 
----
+## 🔍 Tracing & Monitoring
 
-**Built with ❤️ for healthcare professionals and patients using Azure AI Foundry Connected Agents**
+The system includes comprehensive tracing for complete observability of the multi-agent workflow using the [Azure AI Foundry Tracing SDK](https://learn.microsoft.com/en-us/azure/ai/foundry/how-to/develop/trace-agents-sdk):
+
+### Viewing Traces
+Access detailed traces in:
+- **Azure AI Foundry Portal** → Traces tab
+- **Azure Monitor** → Application Insights → Transaction search
+- **Application Insights** → Logs and traces
+
+---

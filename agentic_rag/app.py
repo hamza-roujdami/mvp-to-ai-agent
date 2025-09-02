@@ -26,7 +26,7 @@ try:
     from azure.ai.projects import AIProjectClient
     from azure.ai.agents.models import MessageRole
     from azure.identity import DefaultAzureCredential
-    from monitoring import setup_monitoring
+    from tracing import get_tracing
     from agents.orchestrator_agent import create_orchestrator_agent
     print("✅ Successfully imported all required modules")
 except ImportError as e:
@@ -43,14 +43,8 @@ class HealthAINexusApp:
         self.orchestrator_agent = None
         self.agents_created = False
         
-        # Initialize monitoring
-        try:
-            self.monitor = setup_monitoring()
-            self.monitor.set_application_context("healthcare-connected-agents")
-            print("✅ Monitoring initialized")
-        except Exception as e:
-            print(f"⚠️ Monitoring setup failed: {e}")
-            self.monitor = None
+        # Initialize clean tracing
+        self.tracing = get_tracing()
 
     def initialize_agents(self):
         """Initialize the connected agents system."""
@@ -86,65 +80,68 @@ class HealthAINexusApp:
         if not self.agents_created:
             return "❌ Connected agents not initialized. Please restart the app.", "", ""
         
-        try:
-            progress(0.1, desc="🚀 Starting connected agents workflow...")
-            
-            # Create a thread
-            thread = self.project_client.agents.threads.create()
-            progress(0.2, desc="💬 Created conversation thread...")
-            
-            # Add the user message
-            message = self.project_client.agents.messages.create(
-                thread_id=thread.id,
-                role=MessageRole.USER,
-                content=query,
-            )
-            progress(0.3, desc="📝 Added query to thread...")
-            
-            # Run the orchestrator agent
-            progress(0.4, desc="🎯 Running orchestrator agent...")
-            run = self.project_client.agents.runs.create_and_process(
-                thread_id=thread.id, 
-                agent_id=self.orchestrator_agent.id
-            )
-            
-            progress(0.8, desc="⏳ Processing with connected agents...")
-            
-            if run.status == "completed":
-                # Get the response
-                messages = self.project_client.agents.messages.list(thread_id=thread.id)
-                messages_list = list(messages)
+        # Start clean tracing for the entire workflow
+        with self.tracing.trace_user_query(query, "gradio-user") as main_span:
+            try:
+                progress(0.1, desc="🚀 Starting connected agents workflow...")
                 
-                # Find the latest assistant message
-                assistant_messages = [msg for msg in messages_list if str(msg.role) == "MessageRole.AGENT"]
+                # Create a thread
+                thread = self.project_client.agents.threads.create()
+                progress(0.2, desc="💬 Created conversation thread...")
                 
-                if assistant_messages:
-                    response_message = assistant_messages[-1]
+                # Add the user message
+                message = self.project_client.agents.messages.create(
+                    thread_id=thread.id,
+                    role=MessageRole.USER,
+                    content=query,
+                )
+                progress(0.3, desc="📝 Added query to thread...")
+                
+                # Run the orchestrator agent with tracing
+                progress(0.4, desc="🎯 Running orchestrator agent...")
+                with self.tracing.trace_orchestrator(query) as orch_span:
+                    run = self.project_client.agents.runs.create_and_process(
+                        thread_id=thread.id, 
+                        agent_id=self.orchestrator_agent.id
+                    )
+                
+                progress(0.8, desc="⏳ Processing with connected agents...")
+                
+                if run.status == "completed":
+                    # Get the response
+                    messages = self.project_client.agents.messages.list(thread_id=thread.id)
+                    messages_list = list(messages)
                     
-                    # Extract the response content
-                    response_content = ""
-                    if hasattr(response_message, 'content') and response_message.content:
-                        for content_item in response_message.content:
-                            if hasattr(content_item, 'text'):
-                                text_content = content_item.text
-                                if hasattr(text_content, 'value'):
-                                    text_value = text_content.value
-                                    if text_value and text_value.strip() != "ASSISTANT":
-                                        response_content += text_value + "\n"
+                    # Find the latest assistant message
+                    assistant_messages = [msg for msg in messages_list if str(msg.role) == "MessageRole.AGENT"]
+                    
+                    if assistant_messages:
+                        response_message = assistant_messages[-1]
+                        
+                        # Extract the response content
+                        response_content = ""
+                        if hasattr(response_message, 'content') and response_message.content:
+                            for content_item in response_message.content:
+                                if hasattr(content_item, 'text'):
+                                    text_content = content_item.text
+                                    if hasattr(text_content, 'value'):
+                                        text_value = text_content.value
+                                        if text_value and text_value.strip() != "ASSISTANT":
+                                            response_content += text_value + "\n"
+                                    else:
+                                        if text_content and str(text_content).strip() != "ASSISTANT":
+                                            response_content += str(text_content) + "\n"
                                 else:
-                                    if text_content and str(text_content).strip() != "ASSISTANT":
-                                        response_content += str(text_content) + "\n"
-                            else:
-                                content_str = str(content_item)
-                                if content_str and content_str.strip() != "ASSISTANT":
-                                    response_content += content_str + "\n"
-                    
-                    progress(1.0, desc="✅ Connected agents workflow completed!")
-                    
-                    # Generate workflow info
-                    workflow_info = ""
-                    if show_agents:
-                        workflow_info = f"""
+                                    content_str = str(content_item)
+                                    if content_str and content_str.strip() != "ASSISTANT":
+                                        response_content += content_str + "\n"
+                        
+                        progress(1.0, desc="✅ Connected agents workflow completed!")
+                        
+                        # Generate workflow info
+                        workflow_info = ""
+                        if show_agents:
+                            workflow_info = f"""
 ### 🤖 Agent Workflow Details
 
 **Orchestrator Agent:** {self.orchestrator_agent.name} (ID: {self.orchestrator_agent.id})
@@ -157,10 +154,10 @@ class HealthAINexusApp:
 **Workflow Status:** ✅ Completed Successfully
 **Thread ID:** {thread.id}
 **Run ID:** {run.id}
-                        """
-                    
-                    # Generate system status
-                    system_status = f"""
+                            """
+                        
+                        # Generate system status
+                        system_status = f"""
 ### 📊 System Status
 
 **✅ Connected Agents System:** Operational
@@ -171,26 +168,32 @@ class HealthAINexusApp:
 **⏱️ Response Time:** {run.created_at} - {run.completed_at if hasattr(run, 'completed_at') else 'N/A'}
 
 **⚠️ Medical Disclaimer:** This system provides general health information only. Always consult with qualified healthcare professionals for medical advice, diagnosis, or treatment.
-                    """
-                    
-                    # Clean up
-                    self.project_client.agents.threads.delete(thread.id)
-                    
-                    final_response = response_content.strip() if response_content.strip() else "❌ No response content received from connected agents."
-                    return final_response, workflow_info, system_status
+                        """
+                        
+                        # Clean up - Commented out for demo purposes to keep threads visible
+                        # self.project_client.agents.threads.delete(thread.id)
+                        
+                        # Log workflow completion
+                        self.tracing.log_workflow_completion(True, 1000.0, 4)
+                        
+                        final_response = response_content.strip() if response_content.strip() else "❌ No response content received from connected agents."
+                        return final_response, workflow_info, system_status
+                    else:
+                        progress(1.0, desc="❌ No response received")
+                        self.tracing.log_workflow_completion(False, 0.0, 0)
+                        return "❌ No response received from the connected agents.", "", ""
                 else:
-                    progress(1.0, desc="❌ No response received")
-                    return "❌ No response received from the connected agents.", "", ""
-            else:
-                progress(1.0, desc="❌ Workflow failed")
-                error_msg = f"❌ Connected agents workflow failed: {run.last_error}"
+                    progress(1.0, desc="❌ Workflow failed")
+                    self.tracing.log_workflow_completion(False, 0.0, 0)
+                    error_msg = f"❌ Connected agents workflow failed: {run.last_error}"
+                    return error_msg, "", ""
+                    
+            except Exception as e:
+                progress(1.0, desc="❌ Error occurred")
+                print(f"❌ Error processing query: {e}")
+                self.tracing.log_workflow_completion(False, 0.0, 0)
+                error_msg = f"❌ Error processing query: {str(e)}"
                 return error_msg, "", ""
-                
-        except Exception as e:
-            progress(1.0, desc="❌ Error occurred")
-            print(f"❌ Error processing query: {e}")
-            error_msg = f"❌ Error processing query: {str(e)}"
-            return error_msg, "", ""
 
 
 def create_gradio_interface():
