@@ -26,9 +26,9 @@ try:
     from azure.ai.projects import AIProjectClient
     from azure.ai.agents.models import MessageRole
     from azure.identity import DefaultAzureCredential
-    from observe_optimize.tracing import get_tracing
+    from monitoring.tracing import get_tracing
     from agents.orchestrator_agent import create_orchestrator_agent
-    from observe_optimize.continuous_evaluation import create_continuous_evaluator
+    from monitoring.continuous_evaluation import create_continuous_evaluator
     print("✅ Successfully imported all required modules")
 except ImportError as e:
     print(f"❌ Import error: {e}")

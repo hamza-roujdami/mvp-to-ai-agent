@@ -1,5 +1,5 @@
 """
-Observe & Optimize Module
+Monitoring Module
 Contains tracing and continuous evaluation components for the healthcare agentic system
 """
 
