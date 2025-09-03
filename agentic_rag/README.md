@@ -13,6 +13,8 @@ An intelligent healthcare AI system powered by Azure AI Solutions providing comp
 | **Web UI** | Gradio | User interface and interaction |
 | **Monitoring** | Azure Monitor + Application Insights | Telemetry and observability |
 | **Observability** | OpenTelemetry | Distributed tracing |
+| **Security Testing** | Azure AI Red Teaming | Safety validation and vulnerability testing |
+| **Quality Assurance** | Continuous Evaluation | Performance and quality assessment |
 | **Language** | Python 3.9+ | Backend development |
 
 ## 🏗️ Architecture
@@ -33,6 +35,25 @@ User → Gradio UI → Azure AI Foundry (4 Connected Agents)
    Healthcare Docs  Data Analysis  Report Generation
                       ↓
               Comprehensive Response → User
+                      ↓
+        ┌─────────────────────────────┐
+        │     Monitoring & Security   │
+        │  ┌─────────────────────────┐│
+        │  │  Continuous Evaluation  ││
+        │  │  (Relevance, Fluency,   ││
+        │  │   Coherence)            ││
+        │  └─────────────────────────┘│
+        │  ┌─────────────────────────┐│
+        │  │  Red Teaming            ││
+        │  │  (Safety Testing,       ││
+        │  │   Vulnerability Scan)   ││
+        │  └─────────────────────────┘│
+        │  ┌─────────────────────────┐│
+        │  │  Tracing & Monitoring   ││
+        │  │  (OpenTelemetry,        ││
+        │  │   Application Insights) ││
+        │  └─────────────────────────┘│
+        └─────────────────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -91,6 +112,12 @@ Ask healthcare questions like:
 - **📝 Synthesis Agent**: Patient-friendly responses with medical summaries
 - **🎯 Orchestrator Agent**: Coordinates connected agents workflow
 
+### Security & Quality Assurance
+- **🛡️ Red Teaming**: Automated security testing for safety vulnerabilities
+- **📊 Continuous Evaluation**: Real-time quality assessment (Relevance, Fluency, Coherence)
+- **🔍 Comprehensive Monitoring**: Full observability with tracing and metrics
+- **🏥 Healthcare-Specific**: Medical safety validation and compliance testing
+
 
 ## 📊 Monitoring
 
@@ -115,7 +142,10 @@ agentic_rag/
 │   ├── test_azure_search.py
 │   ├── test_research_agent.py
 │   └── run_all_tests.py
-├── monitoring/          # Azure Monitor integration  
+├── monitoring/          # Monitoring, evaluation & security
+│   ├── tracing.py      # OpenTelemetry tracing
+│   ├── continuous_evaluation.py  # Quality assessment
+│   └── red_teaming.py  # Security testing
 ├── app.py              # Main application
 ├── app_enhanced.py     # Enhanced version with advanced features
 └── config.env.example
@@ -130,6 +160,9 @@ Required environment variables in `.env`:
 - `AZURE_SEARCH_KEY` - Azure AI Search service key
 - `AZURE_SEARCH_INDEX_NAME` - Search index name (default: healthcare-documents)
 - `APPLICATIONINSIGHTS_CONNECTION_STRING` - Monitoring connection
+- `MODEL_ENDPOINT` - Azure OpenAI endpoint for red teaming
+- `MODEL_API_KEY` - Azure OpenAI API key for red teaming
+- `MODEL_DEPLOYMENT_NAME` - Model deployment name (default: gpt-4o)
 
 ## 🧪 Testing
 
