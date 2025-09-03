@@ -1,7 +1,7 @@
 # Azure AI Foundry Agentic RAG System Dependencies
 
 # Azure AI Foundry SDK
-azure-ai-projects>=1.0.0b10
+azure-ai-projects>=1.1.0b3
 azure-ai-inference>=1.0.0b9
 azure-ai-agents>=1.0.0b10
 azure-identity>=1.15.0

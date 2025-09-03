@@ -29,6 +29,7 @@ try:
     from monitoring.tracing import get_tracing
     from agents.orchestrator_agent import create_orchestrator_agent
     from monitoring.continuous_evaluation import create_continuous_evaluator
+    from monitoring.red_teaming import create_healthcare_red_team
     print("✅ Successfully imported all required modules")
 except ImportError as e:
     print(f"❌ Import error: {e}")
@@ -44,6 +45,7 @@ class HealthAINexusApp:
         self.orchestrator_agent = None
         self.agents_created = False
         self.continuous_evaluator = None
+        self.red_team = None
         
         # Initialize clean tracing
         self.tracing = get_tracing()
@@ -68,6 +70,14 @@ class HealthAINexusApp:
             self.continuous_evaluator = create_continuous_evaluator(self.project_client)
             print("✅ Continuous evaluation initialized")
             
+            # Initialize red teaming (optional)
+            try:
+                self.red_team = create_healthcare_red_team(self.project_client)
+                print("✅ Red teaming initialized")
+            except Exception as e:
+                print(f"⚠️ Red teaming not available: {e}")
+                self.red_team = None
+            
             print("✅ Connected Agents System Initialized Successfully!")
             print(f"   Orchestrator Agent ID: {self.orchestrator_agent.id}")
             print(f"   Research Agent ID: {agents['research_agent'].id}")
@@ -79,6 +89,48 @@ class HealthAINexusApp:
         except Exception as e:
             print(f"❌ Failed to initialize connected agents: {e}")
             return False
+    
+    def run_red_team_scan(self, model_deployment_name: str = "gpt-4o") -> str:
+        """
+        Run a red team scan for security testing
+        
+        Args:
+            model_deployment_name: The model deployment to test
+            
+        Returns:
+            String with scan results
+        """
+        if not self.red_team:
+            return "❌ Red teaming not available. Please check configuration."
+        
+        try:
+            print(f"🛡️ Starting red team scan for {model_deployment_name}...")
+            result = self.red_team.run_healthcare_safety_test(model_deployment_name)
+            
+            if result.get("success"):
+                scan_id = result.get("scan_id")
+                status = result.get("status")
+                return f"""✅ **Red Team Scan Started Successfully!**
+
+**📋 Scan Details:**
+- **Scan ID**: `{scan_id}`
+- **Status**: {status}
+- **Target Model**: {model_deployment_name}
+- **Risk Categories**: Violence, Safety
+- **Attack Strategies**: BASE64, FLIP
+
+**🔍 Next Steps:**
+1. Check **Azure AI Foundry Portal** → Red Teaming section
+2. Monitor scan progress and results
+3. Review security reports for vulnerabilities
+
+**💡 Note**: This is a one-time security test, not continuous monitoring."""
+            else:
+                error = result.get("error", "Unknown error")
+                return f"❌ **Red Team Scan Failed**: {error}"
+                
+        except Exception as e:
+            return f"❌ **Red Team Scan Error**: {str(e)}"
 
     def process_healthcare_query(self, query, show_agents=True, progress=gr.Progress()):
         """Process a healthcare query using the connected agents system."""
@@ -324,8 +376,14 @@ def create_gradio_interface():
             with gr.Column(scale=1):
                 show_agents = gr.Checkbox(
                     label="🤖 Show Agent Workflow",
-                    value=True,
-                    info="Display the agent coordination process"
+                    value=True
+                )
+                
+                # Red teaming button
+                red_team_btn = gr.Button(
+                    "🛡️ Run Security Scan",
+                    variant="secondary",
+                    size="sm"
                 )
         
         # Submit button
@@ -398,6 +456,14 @@ def create_gradio_interface():
             elem_classes=["metric-box"]
         )
         
+        # Red teaming output
+        red_team_output = gr.Markdown(
+            label="🛡️ Security Scan Results",
+            value="Click 'Run Security Scan' to test system security...",
+            elem_classes=["metric-box"],
+            visible=False
+        )
+        
         # Event handlers
         submit_btn.click(
             fn=app.process_healthcare_query,
@@ -413,6 +479,19 @@ def create_gradio_interface():
             inputs=[query_input, show_agents],
             outputs=[response_output, workflow_output, metrics_output],
             api_name="query_connected_agents_enter",
+            queue=True
+        )
+        
+        # Red teaming button handler
+        def run_red_team_and_show():
+            result = app.run_red_team_scan()
+            return result, gr.update(visible=True)
+        
+        red_team_btn.click(
+            fn=run_red_team_and_show,
+            inputs=[],
+            outputs=[red_team_output, red_team_output],
+            api_name="run_red_team_scan",
             queue=True
         )
         

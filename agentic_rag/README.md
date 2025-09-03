@@ -204,5 +204,30 @@ Access evaluation results in:
 - **Application Insights** → Logs (search for "gen_ai.evaluation.result")
 - **Azure Monitor** → Workbooks for detailed analysis 
 
+## 🛡️ Red Teaming
+
+The system includes **Azure AI Red Teaming** for security testing and safety validation of healthcare agents.
+
+### Red Teaming Features
+- **Safety Testing**: Identifies potential safety risks and vulnerabilities
+- **Attack Simulation**: Tests models against adversarial attacks
+- **Healthcare-Specific**: Configured for medical AI safety requirements
+- **Compliance**: Helps meet healthcare regulatory requirements
+
+### Running Red Team Tests
+```bash
+# Test red teaming functionality
+python test_red_teaming.py
+```
+
+### Viewing Red Team Results
+Access red team results in:
+- **Azure AI Foundry Portal** → Red Teaming section
+- **Security Reports** → Detailed vulnerability analysis
+- **Compliance Dashboard** → Healthcare safety metrics
+
+### Documentation
+- [Azure AI Red Teaming Documentation](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/run-ai-red-teaming-cloud)
+
 
 ---
